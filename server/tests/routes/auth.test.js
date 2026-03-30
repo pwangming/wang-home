@@ -3,17 +3,20 @@ import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 import request from 'supertest'
 
-function normalizeToKoaApp(appOrRouter) {
+function normalizeToKoaApp(appOrRouter, middleware = []) {
   if (typeof appOrRouter?.callback === 'function') return appOrRouter
   const app = new Koa()
+  for (const m of middleware) {
+    app.use(m)
+  }
   app.use(bodyParser())
   app.use(appOrRouter.routes())
   app.use(appOrRouter.allowedMethods())
   return app
 }
 
-async function simulateRequest(appOrRouter, method, path, body = null, headers = {}) {
-  const app = normalizeToKoaApp(appOrRouter)
+async function simulateRequest(appOrRouter, method, path, body = null, headers = {}, middleware = []) {
+  const app = normalizeToKoaApp(appOrRouter, middleware)
   let req = request(app.callback())[method.toLowerCase()](path)
   for (const [key, value] of Object.entries(headers)) {
     req = req.set(key, value)
@@ -44,6 +47,13 @@ const mockCreateClient = jest.fn(() => ({
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: mockCreateClient
 }))
+
+// Mock session middleware that sets up ctx.session with supabaseAccessToken
+const mockSessionMiddleware = jest.fn(async (ctx, next) => {
+  if (!ctx.session) ctx.session = {}
+  ctx.session.supabaseAccessToken = 'valid-token'
+  await next()
+})
 
 const { default: authRouter } = await import('../../src/routes/auth.js')
 
@@ -207,14 +217,14 @@ describe('Auth Routes', () => {
 
     test('returns 401 when token invalid', async () => {
       mockAuth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('Invalid token') })
-      const res = await simulateRequest(app, 'GET', '/me', null, { Cookie: 'session=invalid-token' })
+      const res = await simulateRequest(app, 'GET', '/me', null, { Cookie: 'session=invalid-token' }, [mockSessionMiddleware])
       expect(res.status).toBe(401)
     })
 
     test('returns user data when token valid', async () => {
       const mockUser = { id: '123', email: 'test@test.com' }
       mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
-      const res = await simulateRequest(app, 'GET', '/me', null, { Cookie: 'session=valid-token' })
+      const res = await simulateRequest(app, 'GET', '/me', null, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
       expect(res.status).toBe(200)
       expect(res.body.user.id).toBe('123')
       expect(res.body.user.email).toBe('test@test.com')
