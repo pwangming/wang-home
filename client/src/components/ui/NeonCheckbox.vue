@@ -16,8 +16,10 @@
 </template>
 
 <script setup>
-defineProps({
-  modelValue: Boolean
+const props = withDefaults(defineProps<{
+  modelValue?: boolean
+}>(), {
+  modelValue: false
 })
 defineEmits(['update:modelValue'])
 </script>

@@ -35,7 +35,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const internalValue = computed({
-  get: () => props.modelValue,
+  get: () => props.modelValue ?? '',
   set: v => emit('update:modelValue', v)
 })
 
