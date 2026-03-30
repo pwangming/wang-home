@@ -28,6 +28,9 @@ npm-debug.log*
 # Test coverage
 coverage/
 
+# Worktrees
+.worktrees/
+
 # Supabase (本地开发不提交)
 supabase/.branches/
 supabase/config.local.toml
