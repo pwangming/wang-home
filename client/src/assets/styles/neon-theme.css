@@ -1,0 +1,48 @@
+/* Neon Theme Variables */
+:root {
+  /* Background */
+  --bg-gradient-start: #1a1a2e;
+  --bg-gradient-end: #16213e;
+
+  /* Accent Colors */
+  --neon-green: #4ade80;
+  --neon-blue: #409eff;
+  --neon-green-glow: rgba(74, 222, 128, 0.5);
+  --neon-blue-glow: rgba(64, 158, 255, 0.5);
+
+  /* Card */
+  --card-bg: rgba(26, 26, 46, 0.9);
+  --card-border: #2a2a4e;
+  --card-radius: 16px;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #909399;
+  --text-disabled: #666666;
+
+  /* Button */
+  --btn-radius: 8px;
+  --btn-height: 56px;
+  --btn-height-sm: 48px;
+
+  /* Input */
+  --input-bg: #2a2a3e;
+  --input-radius: 8px;
+  --input-height: 56px;
+}
+
+/* Global Neon Styles */
+.neon-body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+}
+
+.neon-text-green {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px var(--neon-green-glow);
+}
+
+.neon-text-heading {
+  color: var(--text-primary);
+  font-weight: bold;
+}
