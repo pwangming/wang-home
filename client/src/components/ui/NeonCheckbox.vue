@@ -16,10 +16,11 @@
 </template>
 
 <script setup>
-const props = withDefaults(defineProps<{
-  modelValue?: boolean
-}>(), {
-  modelValue: false
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  }
 })
 defineEmits(['update:modelValue'])
 </script>
