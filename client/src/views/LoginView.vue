@@ -25,7 +25,7 @@
       <NeonCard class="login-card">
         <h2 class="login-card__title">登录账号</h2>
 
-        <n-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleSubmit">
+        <n-form :model="form" @submit.prevent="handleSubmit">
           <div class="form-field">
             <label class="form-label">用户名或邮箱</label>
             <NeonInput
@@ -104,7 +104,6 @@ import { authStore } from '../stores/auth.js'
 
 const router = useRouter()
 
-const formRef = ref(null)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const rememberMe = ref(false)
@@ -119,10 +118,7 @@ const errors = reactive({
   password: ''
 })
 
-const rules = {
-  email: { required: true, message: '请输入邮箱', trigger: 'blur' },
-  password: { required: true, message: '请输入密码', trigger: 'blur' }
-}
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function validate() {
   errors.email = ''
@@ -130,6 +126,10 @@ function validate() {
 
   if (!form.email) {
     errors.email = '请输入邮箱'
+    return false
+  }
+  if (!emailRegex.test(form.email)) {
+    errors.email = '请输入有效的邮箱格式'
     return false
   }
   if (!form.password) {
@@ -145,7 +145,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
-    await authStore.login(form.email, form.password)
+    await authStore.login(form.email, form.password, rememberMe.value)
     router.push('/game')
   } catch (err) {
     errorMessage.value = err.message || '登录失败'
@@ -155,7 +155,8 @@ async function handleSubmit() {
 }
 
 function handleGoogleLogin() {
-  // TODO: Implement Google OAuth
+  // TODO: Implement Google OAuth login flow
+  // This will require setting up Google OAuth credentials in Supabase
   console.log('Google login not implemented')
 }
 </script>
@@ -167,6 +168,9 @@ function handleGoogleLogin() {
   padding: 40px;
   position: relative;
   overflow: hidden;
+  --decor-green: rgba(74, 222, 128, 0.2);
+  --decor-blue: rgba(64, 158, 255, 0.2);
+  --error-color: #f56c6c;
 }
 
 /* 装饰元素 */
@@ -180,7 +184,7 @@ function handleGoogleLogin() {
 .login-decor--tl {
   width: 512px;
   height: 512px;
-  background: rgba(74, 222, 128, 0.2);
+  background: var(--decor-green);
   top: -256px;
   left: -256px;
 }
@@ -188,7 +192,7 @@ function handleGoogleLogin() {
 .login-decor--br {
   width: 384px;
   height: 307px;
-  background: rgba(64, 158, 255, 0.2);
+  background: var(--decor-blue);
   bottom: -150px;
   right: 100px;
 }
@@ -291,7 +295,7 @@ function handleGoogleLogin() {
 
 .form-error {
   font-size: 12px;
-  color: #f56c6c;
+  color: var(--error-color);
   margin-top: 4px;
   display: block;
 }
