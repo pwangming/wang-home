@@ -1,42 +1,36 @@
 // In-memory rate limiter for local development
 // Production should use Redis or other shared storage
 
-const stores = {
-  memory: new Map()
-}
-
 function createRateLimiter(options = {}) {
   const {
-    store = 'memory',
     windowMs = 60 * 1000,
     maxRequests = 30,
     keyGenerator = (ctx) => ctx.ip || 'unknown'
   } = options
 
-  const windowMsGlobal = windowMs
-  const maxRequestsGlobal = maxRequests
+  // Create a new store for each limiter instance
+  const store = new Map()
 
   return async function rateLimitMiddleware(ctx, next) {
-    const storeInstance = stores[store] || stores.memory
-    const key = keyGenerator(ctx)
     const now = Date.now()
-    const windowStart = now - windowMsGlobal
+    const windowStart = now - windowMs
+    const key = keyGenerator(ctx)
 
-    if (!storeInstance.has(key)) {
-      storeInstance.set(key, [])
+    if (!store.has(key)) {
+      store.set(key, [])
     }
 
-    const requests = storeInstance.get(key)
+    const requests = store.get(key)
     const recentRequests = requests.filter(time => time > windowStart)
 
-    if (recentRequests.length >= maxRequestsGlobal) {
+    if (recentRequests.length >= maxRequests) {
       ctx.status = 429
       ctx.body = { error: '请求过于频繁，请稍后再试' }
       return
     }
 
     recentRequests.push(now)
-    storeInstance.set(key, recentRequests)
+    store.set(key, recentRequests)
 
     await next()
   }
