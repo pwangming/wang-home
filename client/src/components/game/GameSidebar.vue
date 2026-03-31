@@ -95,17 +95,18 @@ const latestAchievement = computed(() => {
 <style scoped>
 /* === 1920x1080 Baseline === */
 .game-sidebar {
-  --sidebar-width: clamp(280px, 22vw, 340px);
-  --section-padding: clamp(16px, 1.5vw, 24px);
-  --gap: clamp(12px, 1vw, 16px);
-  --score-size: clamp(36px, 3vw, 52px);
-  --key-size: clamp(40px, 3.5vw, 52px);
+  --sidebar-width: clamp(240px, 20vw, 340px);
+  --section-padding: clamp(12px, 1.2vw, 24px);
+  --gap: clamp(8px, 0.8vw, 16px);
+  --score-size: clamp(32px, 2.5vw, 52px);
+  --key-size: clamp(36px, 3vw, 52px);
 
   width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 
 /* 得分区域 */

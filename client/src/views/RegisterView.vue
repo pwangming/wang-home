@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
   padding: 0 var(--page-padding) var(--page-padding);
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
   box-sizing: border-box;
 }
 

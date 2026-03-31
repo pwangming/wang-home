@@ -34,3 +34,9 @@ coverage/
 # Supabase (本地开发不提交)
 supabase/.branches/
 supabase/config.local.toml
+
+# Playwright CLI (本地测试生成)
+.playwright-cli/
+
+# Claude Code superpowers
+.superpowers/
