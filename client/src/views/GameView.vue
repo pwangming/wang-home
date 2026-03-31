@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NModal, useMessage } from 'naive-ui'
 import SnakeGame from '../components/game/SnakeGame.vue'
@@ -146,6 +146,10 @@ const showGuestWarning = ref(false)
 const hasSeenGuestWarning = ref(false)
 const submitStatus = ref('')
 const submitMessage = ref('')
+
+// Store timer IDs for cleanup
+let gameStartTimer = null
+let submitStatusTimer = null
 
 const speedOptions = [
   { value: 1.0, label: '1.0x', scoreMult: 1.0 },
@@ -194,7 +198,7 @@ async function startGame() {
   }
   isPlaying.value = true
   currentScore.value = 0
-  setTimeout(() => {
+  gameStartTimer = setTimeout(() => {
     snakeGameRef.value?.startGame()
   }, 100)
 }
@@ -221,7 +225,7 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
     submitMessage.value = '分数提交失败'
   }
 
-  setTimeout(() => {
+  submitStatusTimer = setTimeout(() => {
     submitStatus.value = ''
   }, 3000)
 }
@@ -233,6 +237,17 @@ function playAgain() {
 onMounted(async () => {
   await authStore.init()
   checkGuestWarning()
+})
+
+onBeforeUnmount(() => {
+  if (gameStartTimer) {
+    clearTimeout(gameStartTimer)
+    gameStartTimer = null
+  }
+  if (submitStatusTimer) {
+    clearTimeout(submitStatusTimer)
+    submitStatusTimer = null
+  }
 })
 </script>
 
