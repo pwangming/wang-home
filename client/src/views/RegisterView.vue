@@ -106,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import NeonCard from '../components/ui/NeonCard.vue'
 import NeonButton from '../components/ui/NeonButton.vue'
@@ -145,6 +145,7 @@ function sendCode() {
     codeCooldown.value--
     if (codeCooldown.value <= 0) {
       clearInterval(cooldownTimer)
+      cooldownTimer = null
     }
   }, 1000)
 }
@@ -200,6 +201,13 @@ function handleGoogleRegister() {
   // TODO: Implement Google OAuth
   console.log('Google register not implemented')
 }
+
+onBeforeUnmount(() => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer)
+    cooldownTimer = null
+  }
+})
 </script>
 
 <style scoped>
