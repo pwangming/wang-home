@@ -18,9 +18,9 @@
       <div class="game-board-section">
         <div class="game-board-wrapper">
           <div class="game-board">
-            <!-- 预游戏状态 -->
+            <!-- 预游戏状态 or 游戏结束状态 -->
             <div v-if="!isPlaying" class="game-overlay">
-              <div class="game-start-card">
+              <div v-if="!lastGameScore" class="game-start-card">
                 <div class="welcome-section">
                   <h2>霓虹贪吃蛇</h2>
                   <p v-if="!authStore.user">您当前未登录，游玩成绩不会计入排行榜</p>
@@ -47,6 +47,33 @@
                 <button class="start-btn" @click="startGame">
                   <span class="start-btn__icon">▶</span>
                   开始游戏
+                </button>
+              </div>
+              <div v-else class="game-over-card">
+                <h2>游戏结束</h2>
+                <div class="final-score">最终得分: {{ lastGameScore.toLocaleString() }}</div>
+
+                <div class="speed-selection">
+                  <div class="selection-label">选择速度倍数</div>
+                  <div class="speed-buttons">
+                    <button
+                      v-for="speed in speedOptions"
+                      :key="speed.value"
+                      class="speed-btn"
+                      :class="{ active: selectedSpeed === speed.value }"
+                      @click="selectedSpeed = speed.value"
+                    >
+                      {{ speed.label }}
+                    </button>
+                  </div>
+                  <div class="score-hint">
+                    得分倍数: {{ currentScoreMultiplier }}x
+                  </div>
+                </div>
+
+                <button class="start-btn" @click="playAgain">
+                  <span class="start-btn__icon">▶</span>
+                  再来一局
                 </button>
               </div>
             </div>
@@ -111,6 +138,7 @@ const message = useMessage()
 
 const isPlaying = ref(false)
 const currentScore = ref(0)
+const lastGameScore = ref(0)
 const selectedSpeed = ref(1.0)
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
@@ -174,6 +202,7 @@ async function startGame() {
 async function handleGameOver(finalScore, speedMult, scoreMult) {
   isPlaying.value = false
   currentScore.value = finalScore
+  lastGameScore.value = finalScore
 
   if (!authStore.user) {
     message.warning('成绩未记录')
@@ -195,6 +224,10 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
   setTimeout(() => {
     submitStatus.value = ''
   }, 3000)
+}
+
+function playAgain() {
+  lastGameScore.value = 0
 }
 
 onMounted(async () => {
@@ -294,9 +327,23 @@ onMounted(async () => {
   border-radius: var(--card-radius);
 }
 
-.game-start-card {
+.game-start-card,
+.game-over-card {
   text-align: center;
   padding: 40px;
+}
+
+.game-over-card h2 {
+  font-size: 32px;
+  color: var(--neon-green);
+  margin: 0 0 16px;
+  text-shadow: 0 0 20px var(--neon-green-glow);
+}
+
+.final-score {
+  font-size: 24px;
+  color: var(--text-primary);
+  margin-bottom: 24px;
 }
 
 .welcome-section h2 {
