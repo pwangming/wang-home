@@ -1,192 +1,263 @@
 <template>
-  <n-modal v-model:show="showInternal" :mask-closable="true" preset="card" title="排行榜" style="max-width: 500px; width: 90%;">
-    <div v-if="isLoading" class="loading">加载中...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else-if="realtimeError" class="realtime-error">
-      {{ realtimeError }}
-    </div>
-    <div v-else class="leaderboard-content">
-      <div v-if="myRank" class="my-rank">
-        <span>你的排名: </span>
-        <span class="rank-number">第 {{ myRank.rank }} 名</span>
-        <span class="rank-score">{{ myRank.best_score }} 分</span>
+  <n-modal
+    :show="show"
+    @update:show="$emit('update:show', $event)"
+    :mask-closable="true"
+    preset="card"
+    class="leaderboard-modal"
+    :style="{ width: '672px' }"
+  >
+    <template #header>
+      <div class="modal-header">
+        <h2 class="modal-title">排行榜</h2>
+        <button class="close-btn" @click="$emit('update:show', false)">✕</button>
       </div>
-      <n-data-table :columns="columns" :data="leaderboard" :bordered="false" />
+    </template>
+
+    <div class="leaderboard-content">
+      <!-- Tab 切换 -->
+      <div class="tabs">
+        <button
+          class="tab"
+          :class="{ active: activeTab === 'all' }"
+          @click="activeTab = 'all'"
+        >
+          全部
+        </button>
+        <button
+          class="tab"
+          :class="{ active: activeTab === 'mine' }"
+          @click="activeTab = 'mine'"
+        >
+          我的排名
+        </button>
+      </div>
+
+      <!-- 表格 -->
+      <div class="leaderboard-table">
+        <!-- 表头 -->
+        <div class="table-header">
+          <div class="col-rank">排名</div>
+          <div class="col-player">玩家</div>
+          <div class="col-score">分数</div>
+          <div class="col-time">用时</div>
+        </div>
+
+        <!-- 排名列表 -->
+        <div class="table-body">
+          <div
+            v-for="(entry, index) in displayEntries"
+            :key="entry.id"
+            class="table-row"
+            :class="[`rank-${entry.rank}`, { highlight: entry.isMine }]"
+          >
+            <div class="col-rank">
+              <span v-if="entry.rank === 1" class="rank-icon">👑</span>
+              <span v-else-if="entry.rank === 2" class="rank-icon">🥈</span>
+              <span v-else-if="entry.rank === 3" class="rank-icon">🥉</span>
+              <span v-else class="rank-num">{{ entry.rank }}</span>
+            </div>
+            <div class="col-player">
+              <img v-if="entry.avatar" :src="entry.avatar" class="player-avatar" />
+              <span class="player-name">{{ entry.name }}</span>
+            </div>
+            <div class="col-score">{{ entry.score.toLocaleString() }}</div>
+            <div class="col-time">{{ formatTime(entry.duration) }}</div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <template #footer>
+      <div class="modal-footer">
+        <NeonButton type="default" @click="$emit('update:show', false)">
+          收起
+        </NeonButton>
+      </div>
+    </template>
   </n-modal>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { NModal, NDataTable, NTag } from 'naive-ui'
+import { ref, computed, watch } from 'vue'
+import { NModal } from 'naive-ui'
+import NeonButton from '../ui/NeonButton.vue'
 import { api } from '../../lib/api.js'
-import { supabase } from '../../lib/supabase.js'
 
 const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false
-  }
+  show: Boolean
 })
 
-const emit = defineEmits(['update:show'])
+defineEmits(['update:show'])
 
-const showInternal = ref(props.show)
-const isLoading = ref(false)
-const error = ref('')
-const realtimeError = ref('')
-const leaderboard = ref([])
+const activeTab = ref('all')
+const entries = ref([])
 const myRank = ref(null)
 
-let channel = null
-
-const columns = [
-  {
-    title: '排名',
-    key: 'rank',
-    width: 60,
-    render: (row, index) => index + 1
-  },
-  {
-    title: '玩家',
-    key: 'username'
-  },
-  {
-    title: '最高分',
-    key: 'best_score',
-    sorter: (a, b) => a.best_score - b.best_score
+const displayEntries = computed(() => {
+  if (activeTab.value === 'mine' && myRank.value) {
+    return [myRank.value]
   }
-]
-
-watch(() => props.show, (newVal) => {
-  showInternal.value = newVal
-  if (newVal) {
-    fetchLeaderboard()
-    subscribeToRealtime()
-  } else {
-    unsubscribe()
-  }
+  return entries.value
 })
 
-watch(showInternal, (newVal) => {
-  emit('update:show', newVal)
-  if (!newVal) {
-    unsubscribe()
-  }
-})
+function formatTime(seconds) {
+  if (!seconds) return '--:--'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 async function fetchLeaderboard() {
-  isLoading.value = true
-  error.value = ''
   try {
-    const data = await api.leaderboard.list(1, 20)
-    leaderboard.value = data.leaderboard || []
+    const data = await api.leaderboard.getLeaderboard()
+    entries.value = data.entries || []
+    myRank.value = data.myRank || null
   } catch (err) {
-    error.value = '加载排行榜失败'
     console.error('Failed to fetch leaderboard:', err)
-  } finally {
-    isLoading.value = false
   }
 }
 
-async function fetchMyRank() {
-  try {
-    const data = await api.leaderboard.getMyRank()
-    myRank.value = data.rank
-  } catch {
-    myRank.value = null
-  }
-}
-
-function subscribeToRealtime() {
-  realtimeError.value = ''
-  channel = supabase
-    .channel('leaderboard-refresh')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'leaderboard_events'
-      },
-      () => {
-        // Refetch leaderboard when new verified score is added
-        fetchLeaderboard()
-        fetchMyRank()
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        realtimeError.value = '排行榜实时更新已断开，请关闭后重新打开'
-      }
-    })
-}
-
-function unsubscribe() {
-  if (channel) {
-    channel.unsubscribe()
-    channel = null
-  }
-  realtimeError.value = ''
-}
-
-onMounted(() => {
-  if (props.show) {
+watch(() => props.show, (newVal) => {
+  if (newVal) {
     fetchLeaderboard()
-    fetchMyRank()
-    subscribeToRealtime()
   }
-})
-
-onUnmounted(() => {
-  unsubscribe()
 })
 </script>
 
 <style scoped>
-.loading, .error {
-  text-align: center;
-  padding: 40px;
-  color: #909399;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.error {
-  color: #f56c6c;
+.modal-title {
+  font-size: 20px;
+  color: var(--text-primary);
+  margin: 0;
 }
 
-.realtime-error {
-  padding: 12px;
-  background: rgba(245, 108, 108, 0.1);
-  border: 1px solid rgba(245, 108, 108, 0.3);
-  border-radius: 4px;
-  color: #f56c6c;
-  font-size: 14px;
-  margin-bottom: 16px;
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .leaderboard-content {
-  min-height: 200px;
+  padding: 16px 0;
 }
 
-.my-rank {
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.tab {
+  padding: 8px 24px;
+  background: none;
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  background: var(--neon-green);
+  color: #000;
+  border-color: var(--neon-green);
+}
+
+/* Table */
+.leaderboard-table {
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  padding: 12px 24px;
+  background: var(--input-bg);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.table-row {
+  display: flex;
+  padding: 16px 24px;
+  border-top: 1px solid var(--card-border);
+  align-items: center;
+}
+
+.table-row.highlight {
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.rank-1 {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.rank-2 {
+  background: rgba(192, 192, 192, 0.1);
+}
+
+.rank-3 {
+  background: rgba(205, 127, 50, 0.1);
+}
+
+.col-rank {
+  width: 60px;
+  font-weight: bold;
+}
+
+.col-player {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 4px;
-  margin-bottom: 16px;
-  font-size: 14px;
+  gap: 12px;
 }
 
-.rank-number {
+.col-score {
+  width: 120px;
+  text-align: right;
   font-weight: bold;
-  color: #4ade80;
+  color: var(--neon-green);
 }
 
-.rank-score {
-  margin-left: auto;
-  color: #909399;
+.col-time {
+  width: 80px;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.rank-icon {
+  font-size: 20px;
+}
+
+.rank-num {
+  color: var(--text-secondary);
+}
+
+.player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.player-name {
+  color: var(--text-primary);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: center;
 }
 </style>
