@@ -197,20 +197,30 @@ watch(() => props.show, (newVal) => {
   align-items: center;
 }
 
-.table-row.highlight {
-  background: rgba(74, 222, 128, 0.1);
+/* Alternating row backgrounds for rows beyond top 3 */
+.table-row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
 }
 
+.table-row:nth-child(even) {
+  background: transparent;
+}
+
+/* Top 3 ranks use special colors (overrides alternating) */
 .rank-1 {
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(255, 215, 0, 0.1) !important;
 }
 
 .rank-2 {
-  background: rgba(192, 192, 192, 0.1);
+  background: rgba(192, 192, 192, 0.1) !important;
 }
 
 .rank-3 {
-  background: rgba(205, 127, 50, 0.1);
+  background: rgba(205, 127, 50, 0.1) !important;
+}
+
+.table-row.highlight {
+  background: rgba(74, 222, 128, 0.1) !important;
 }
 
 .col-rank {
