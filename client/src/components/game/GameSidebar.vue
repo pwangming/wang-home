@@ -88,17 +88,24 @@ const props = defineProps({
 defineEmits(['open-leaderboard'])
 
 const latestAchievement = computed(() => {
-  // TODO: 从成就系统获取
   return '初露锋芒'
 })
 </script>
 
 <style scoped>
+/* === 1920x1080 Baseline === */
 .game-sidebar {
-  width: 320px;
+  --sidebar-width: clamp(280px, 22vw, 340px);
+  --section-padding: clamp(16px, 1.5vw, 24px);
+  --gap: clamp(12px, 1vw, 16px);
+  --score-size: clamp(36px, 3vw, 52px);
+  --key-size: clamp(40px, 3.5vw, 52px);
+
+  width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--gap);
+  flex-shrink: 0;
 }
 
 /* 得分区域 */
@@ -106,43 +113,44 @@ const latestAchievement = computed(() => {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
-  padding: 24px;
+  padding: var(--section-padding);
 }
 
 .score-label {
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: clamp(4px, 0.5vh, 8px);
 }
 
 .score-value {
-  font-size: 48px;
+  font-size: var(--score-size);
   font-weight: bold;
   color: var(--neon-green);
   text-shadow: 0 0 20px var(--neon-green-glow);
-  margin-bottom: 16px;
+  margin-bottom: clamp(8px, 1vh, 16px);
+  line-height: 1;
 }
 
 .score-divider {
   height: 1px;
   background: var(--card-border);
-  margin: 16px 0;
+  margin: clamp(8px, 1vh, 16px) 0;
 }
 
 .score-info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: clamp(4px, 0.5vh, 8px);
 }
 
 .score-info-label {
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
   color: var(--text-secondary);
 }
 
 .score-info-value {
-  font-size: 16px;
+  font-size: clamp(14px, 1vw, 16px);
   color: var(--text-primary);
   font-weight: bold;
 }
@@ -153,7 +161,7 @@ const latestAchievement = computed(() => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 16px;
+  padding: var(--section-padding);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
@@ -169,16 +177,17 @@ const latestAchievement = computed(() => {
 .leaderboard-btn__content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 0.8vw, 14px);
   color: var(--text-primary);
+  font-size: clamp(13px, 0.9vw, 15px);
 }
 
 .leaderboard-btn__icon {
-  font-size: 20px;
+  font-size: clamp(16px, 1.2vw, 20px);
 }
 
 .leaderboard-btn__arrow {
-  font-size: 20px;
+  font-size: clamp(18px, 1.3vw, 22px);
   color: var(--text-secondary);
 }
 
@@ -186,29 +195,30 @@ const latestAchievement = computed(() => {
 .bento-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--gap);
 }
 
 .bento-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
-  padding: 16px;
+  padding: var(--section-padding);
+  text-align: center;
 }
 
 .bento-card__icon {
-  font-size: 24px;
-  margin-bottom: 8px;
+  font-size: clamp(18px, 1.5vw, 26px);
+  margin-bottom: clamp(4px, 0.5vh, 8px);
 }
 
 .bento-card__label {
-  font-size: 12px;
+  font-size: clamp(10px, 0.75vw, 12px);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: clamp(2px, 0.3vh, 4px);
 }
 
 .bento-card__value {
-  font-size: 24px;
+  font-size: clamp(18px, 1.5vw, 26px);
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -217,25 +227,25 @@ const latestAchievement = computed(() => {
 .achievement-preview {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: clamp(12px, 1vw, 18px);
+  padding: var(--section-padding);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
 }
 
 .achievement-icon {
-  font-size: 24px;
+  font-size: clamp(20px, 1.5vw, 26px);
 }
 
 .achievement-label {
-  font-size: 12px;
+  font-size: clamp(10px, 0.75vw, 12px);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: clamp(2px, 0.3vh, 4px);
 }
 
 .achievement-name {
-  font-size: 16px;
+  font-size: clamp(13px, 0.9vw, 16px);
   color: var(--text-primary);
 }
 
@@ -244,38 +254,42 @@ const latestAchievement = computed(() => {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
-  padding: 16px;
+  padding: var(--section-padding);
 }
 
 .controls-label {
-  font-size: 12px;
+  font-size: clamp(10px, 0.75vw, 12px);
   color: var(--text-secondary);
-  margin-bottom: 12px;
+  margin-bottom: clamp(8px, 0.8vh, 14px);
+  text-align: center;
 }
 
 .direction-keys {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: clamp(4px, 0.5vw, 8px);
+  margin-bottom: clamp(8px, 0.8vh, 14px);
 }
 
 .key-row {
   display: flex;
-  gap: 8px;
+  gap: clamp(4px, 0.5vw, 8px);
 }
 
 .key {
-  width: 48px;
-  height: 48px;
+  width: var(--key-size);
+  height: var(--key-size);
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   color: var(--text-primary);
-  font-size: 20px;
+  font-size: clamp(14px, 1.2vw, 20px);
   cursor: pointer;
   transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .key:active {
@@ -285,11 +299,87 @@ const latestAchievement = computed(() => {
 
 .pause-key {
   width: 100%;
-  padding: 12px;
+  padding: clamp(10px, 0.8vw, 14px);
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: clamp(11px, 0.8vw, 14px);
+  text-align: center;
+}
+
+/* === Responsive Breakpoints === */
+@media (max-width: 1280px) {
+  .game-sidebar {
+    width: 100%;
+    max-width: 600px;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .score-section {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .leaderboard-btn {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .bento-grid {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .achievement-preview {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .controls-section {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-sidebar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .score-section,
+  .leaderboard-btn,
+  .bento-grid,
+  .achievement-preview,
+  .controls-section {
+    min-width: unset;
+    flex: unset;
+    width: 100%;
+  }
+
+  .bento-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-sidebar {
+    gap: 10px;
+  }
+
+  .score-section {
+    padding: 14px;
+  }
+
+  .score-value {
+    font-size: 36px;
+  }
+
+  .key {
+    width: 44px;
+    height: 44px;
+  }
 }
 </style>

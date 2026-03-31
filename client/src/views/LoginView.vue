@@ -155,19 +155,30 @@ async function handleSubmit() {
 }
 
 function handleGoogleLogin() {
-  // TODO: Implement Google OAuth login flow
-  // This will require setting up Google OAuth credentials in Supabase
   console.log('Google login not implemented')
 }
 </script>
 
 <style scoped>
+/* === 1920x1080 Baseline === */
 .login-page {
+  --page-padding: clamp(16px, 2vw, 48px);
+  --brand-title-size: clamp(32px, 3vw, 56px);
+  --brand-desc-size: clamp(12px, 1vw, 16px);
+  --card-width: clamp(320px, 25vw, 420px);
+  --input-height: clamp(44px, 4vh, 56px);
+  --btn-height: clamp(44px, 5vh, 56px);
+  --avatar-size: clamp(28px, 2.5vw, 40px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-  padding: 40px;
+  padding: var(--page-padding);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
   --decor-green: rgba(74, 222, 128, 0.2);
   --decor-blue: rgba(64, 158, 255, 0.2);
   --error-color: #f56c6c;
@@ -177,87 +188,90 @@ function handleGoogleLogin() {
 .login-decor {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(clamp(60px, 5vw, 100px));
   opacity: 0.5;
+  pointer-events: none;
 }
 
 .login-decor--tl {
-  width: 512px;
-  height: 512px;
+  width: clamp(300px, 25vw, 512px);
+  height: clamp(300px, 25vw, 512px);
   background: var(--decor-green);
-  top: -256px;
-  left: -256px;
+  top: calc(-1 * clamp(150px, 15vw, 256px));
+  left: calc(-1 * clamp(150px, 15vw, 256px));
 }
 
 .login-decor--br {
-  width: 384px;
-  height: 307px;
+  width: clamp(250px, 20vw, 400px);
+  height: clamp(200px, 15vw, 320px);
   background: var(--decor-blue);
-  bottom: -150px;
-  right: 100px;
+  bottom: calc(-1 * clamp(100px, 10vw, 150px));
+  right: clamp(50px, 8vw, 150px);
 }
 
 .login-decor--tr {
-  width: 181px;
-  height: 181px;
+  width: clamp(100px, 10vw, 180px);
+  height: clamp(100px, 10vw, 180px);
   border: 1px solid var(--neon-green);
   opacity: 0.3;
-  top: 200px;
+  top: clamp(100px, 15vh, 200px);
   right: 0;
   filter: none;
+  border-radius: 8px;
 }
 
 /* 容器 */
 .login-container {
   max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   display: flex;
-  gap: 48px;
+  gap: clamp(24px, 4vw, 64px);
   align-items: center;
-  min-height: calc(100vh - 80px);
+  justify-content: center;
 }
 
 /* 品牌区 */
 .login-brand {
   flex: 1;
-  padding: 20px;
+  padding: clamp(10px, 2vw, 24px);
+  max-width: 600px;
 }
 
 .login-brand__label {
-  font-size: 12px;
+  font-size: clamp(10px, 0.8vw, 14px);
   color: var(--neon-green);
-  letter-spacing: 2px;
-  margin-bottom: 16px;
+  letter-spacing: clamp(1px, 0.15vw, 2px);
+  margin-bottom: clamp(8px, 1vh, 16px);
 }
 
 .login-brand__title {
-  font-size: 64px;
+  font-size: var(--brand-title-size);
   color: var(--text-primary);
-  margin: 0 0 24px;
+  margin: 0 0 clamp(8px, 1.5vh, 20px);
   line-height: 1.1;
   text-shadow: 0 0 30px var(--neon-green-glow);
 }
 
 .login-brand__desc {
-  font-size: 16px;
+  font-size: var(--brand-desc-size);
   color: var(--text-secondary);
-  margin: 0 0 32px;
-  line-height: 1.6;
-  max-width: 480px;
+  margin: 0 0 clamp(12px, 2vh, 24px);
+  line-height: 1.5;
+  max-width: clamp(280px, 25vw, 420px);
 }
 
 .login-brand__avatars {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 0.5vw, 8px);
 }
 
 .avatar {
-  width: 48px;
-  height: 48px;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   border-radius: 50%;
   border: 2px solid var(--bg-gradient-start);
-  margin-left: -12px;
+  margin-left: calc(-1 * clamp(6px, 0.8vw, 12px));
 }
 
 .avatar:first-child {
@@ -266,35 +280,36 @@ function handleGoogleLogin() {
 
 .login-brand__avatars-text {
   color: var(--text-secondary);
-  font-size: 14px;
-  margin-left: 12px;
+  font-size: clamp(11px, 0.9vw, 14px);
+  margin-left: clamp(8px, 1vw, 16px);
 }
 
 /* 登录卡片 */
 .login-card {
-  flex: 0 0 400px;
+  flex: 0 0 var(--card-width);
+  padding: clamp(20px, 2vw, 32px) !important;
 }
 
 .login-card__title {
-  font-size: 18px;
+  font-size: clamp(16px, 1.2vw, 20px);
   color: var(--text-primary);
-  margin: 0 0 24px;
+  margin: 0 0 clamp(16px, 2vh, 28px);
 }
 
 /* 表单 */
 .form-field {
-  margin-bottom: 16px;
+  margin-bottom: clamp(12px, 1.5vh, 20px);
 }
 
 .form-label {
   display: block;
-  font-size: 14px;
+  font-size: clamp(12px, 0.9vw, 14px);
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: clamp(4px, 0.8vh, 10px);
 }
 
 .form-error {
-  font-size: 12px;
+  font-size: clamp(10px, 0.75vw, 12px);
   color: var(--error-color);
   margin-top: 4px;
   display: block;
@@ -304,21 +319,21 @@ function handleGoogleLogin() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: clamp(16px, 2vh, 28px);
 }
 
 .form-link {
   color: var(--neon-blue);
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
   text-decoration: none;
 }
 
 .login-divider {
   display: flex;
   align-items: center;
-  margin: 24px 0;
+  margin: clamp(16px, 2vh, 28px) 0;
   color: var(--text-disabled);
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
 }
 
 .login-divider::before,
@@ -330,14 +345,14 @@ function handleGoogleLogin() {
 }
 
 .login-divider span {
-  padding: 0 16px;
+  padding: 0 clamp(8px, 1vw, 16px);
 }
 
 .login-footer {
   text-align: center;
-  margin-top: 24px;
+  margin-top: clamp(16px, 2vh, 28px);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
 }
 
 .link-green {
@@ -346,6 +361,72 @@ function handleGoogleLogin() {
 }
 
 .error-alert {
-  margin-top: 16px;
+  margin-top: clamp(12px, 1.5vh, 20px);
+}
+
+/* === Responsive Breakpoints === */
+@media (max-width: 1024px) {
+  .login-container {
+    gap: clamp(16px, 3vw, 32px);
+  }
+
+  .login-brand {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-container {
+    flex-direction: column;
+    gap: 24px;
+    max-width: 420px;
+  }
+
+  .login-brand {
+    text-align: center;
+    max-width: 100%;
+    padding: 16px;
+  }
+
+  .login-brand__desc {
+    max-width: 100%;
+  }
+
+  .login-brand__avatars {
+    justify-content: center;
+  }
+
+  .login-brand__title {
+    font-size: 32px;
+  }
+
+  .login-card {
+    width: 100%;
+    flex: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 12px;
+  }
+
+  .login-brand__title {
+    font-size: 28px;
+  }
+
+  .login-brand__desc {
+    font-size: 13px;
+  }
+
+  .form-options {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
 }
 </style>

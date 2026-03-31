@@ -5,7 +5,7 @@
     :mask-closable="true"
     preset="card"
     class="leaderboard-modal"
-    :style="{ width: '672px' }"
+    :style="{ width: modalWidth }"
   >
     <template #header>
       <div class="modal-header">
@@ -79,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { NModal } from 'naive-ui'
 import NeonButton from '../ui/NeonButton.vue'
 import { api } from '../../lib/api.js'
@@ -101,6 +101,15 @@ const displayEntries = computed(() => {
   return entries.value
 })
 
+const modalWidth = computed(() => {
+  if (typeof window !== 'undefined') {
+    if (window.innerWidth < 480) return '95vw'
+    if (window.innerWidth < 768) return '90vw'
+    if (window.innerWidth < 1024) return '80vw'
+  }
+  return 'min(672px, 90vw)'
+})
+
 function formatTime(seconds) {
   if (!seconds) return '--:--'
   const mins = Math.floor(seconds / 60)
@@ -118,6 +127,7 @@ async function fetchLeaderboard() {
   }
 }
 
+import { watch } from 'vue'
 watch(() => props.show, (newVal) => {
   if (newVal) {
     fetchLeaderboard()
@@ -126,6 +136,7 @@ watch(() => props.show, (newVal) => {
 </script>
 
 <style scoped>
+/* === 1920x1080 Baseline === */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -133,7 +144,7 @@ watch(() => props.show, (newVal) => {
 }
 
 .modal-title {
-  font-size: 20px;
+  font-size: clamp(18px, 1.5vw, 22px);
   color: var(--text-primary);
   margin: 0;
 }
@@ -141,28 +152,34 @@ watch(() => props.show, (newVal) => {
 .close-btn {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: clamp(16px, 1.2vw, 22px);
   color: var(--text-secondary);
   cursor: pointer;
+  padding: 4px 8px;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
 }
 
 .leaderboard-content {
-  padding: 16px 0;
+  padding: clamp(12px, 1.5vw, 20px) 0;
 }
 
 /* Tabs */
 .tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: clamp(6px, 0.8vw, 12px);
+  margin-bottom: clamp(16px, 2vw, 28px);
 }
 
 .tab {
-  padding: 8px 24px;
+  padding: clamp(6px, 0.8vw, 10px) clamp(16px, 2vw, 28px);
   background: none;
   border: 1px solid var(--card-border);
   border-radius: 20px;
   color: var(--text-secondary);
+  font-size: clamp(12px, 0.9vw, 14px);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -171,6 +188,10 @@ watch(() => props.show, (newVal) => {
   background: var(--neon-green);
   color: #000;
   border-color: var(--neon-green);
+}
+
+.tab:hover:not(.active) {
+  border-color: var(--text-secondary);
 }
 
 /* Table */
@@ -182,31 +203,25 @@ watch(() => props.show, (newVal) => {
 
 .table-header {
   display: flex;
-  padding: 12px 24px;
+  padding: clamp(10px, 1vw, 14px) clamp(12px, 1.5vw, 20px);
   background: var(--input-bg);
-  font-size: 12px;
+  font-size: clamp(10px, 0.75vw, 12px);
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: clamp(0.5px, 0.05vw, 1px);
 }
 
 .table-row {
   display: flex;
-  padding: 16px 24px;
+  padding: clamp(12px, 1.2vw, 18px) clamp(12px, 1.5vw, 20px);
   border-top: 1px solid var(--card-border);
   align-items: center;
 }
 
-/* Alternating row backgrounds for rows beyond top 3 */
 .table-row:nth-child(odd) {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.table-row:nth-child(even) {
-  background: transparent;
-}
-
-/* Top 3 ranks use special colors (overrides alternating) */
 .rank-1 {
   background: rgba(255, 215, 0, 0.1) !important;
 }
@@ -224,7 +239,7 @@ watch(() => props.show, (newVal) => {
 }
 
 .col-rank {
-  width: 60px;
+  width: clamp(40px, 5vw, 60px);
   font-weight: bold;
 }
 
@@ -232,42 +247,109 @@ watch(() => props.show, (newVal) => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 1vw, 14px);
+  min-width: 0;
 }
 
 .col-score {
-  width: 120px;
+  width: clamp(80px, 10vw, 120px);
   text-align: right;
   font-weight: bold;
   color: var(--neon-green);
+  font-size: clamp(13px, 0.9vw, 15px);
 }
 
 .col-time {
-  width: 80px;
+  width: clamp(60px, 7vw, 80px);
   text-align: right;
   color: var(--text-secondary);
+  font-size: clamp(12px, 0.85vw, 14px);
 }
 
 .rank-icon {
-  font-size: 20px;
+  font-size: clamp(16px, 1.3vw, 22px);
 }
 
 .rank-num {
   color: var(--text-secondary);
+  font-size: clamp(13px, 0.9vw, 15px);
 }
 
 .player-avatar {
-  width: 32px;
-  height: 32px;
+  width: clamp(28px, 2.5vw, 36px);
+  height: clamp(28px, 2.5vw, 36px);
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .player-name {
   color: var(--text-primary);
+  font-size: clamp(13px, 0.9vw, 15px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modal-footer {
   display: flex;
   justify-content: center;
+}
+
+/* === Responsive Breakpoints === */
+@media (max-width: 768px) {
+  .table-header,
+  .table-row {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .col-rank {
+    width: 40px;
+  }
+
+  .col-score {
+    width: 80px;
+    font-size: 13px;
+  }
+
+  .col-time {
+    width: 60px;
+    font-size: 12px;
+  }
+
+  .player-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .player-name {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs {
+    margin-bottom: 12px;
+  }
+
+  .tab {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+
+  .col-time {
+    display: none;
+  }
+
+  .table-header .col-time,
+  .table-row .col-time {
+    display: none;
+  }
+
+  .table-header .col-score,
+  .table-row .col-score {
+    width: 70px;
+    font-size: 13px;
+  }
 }
 </style>

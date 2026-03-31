@@ -147,7 +147,6 @@ const hasSeenGuestWarning = ref(false)
 const submitStatus = ref('')
 const submitMessage = ref('')
 
-// Store timer IDs for cleanup
 let gameStartTimer = null
 let submitStatusTimer = null
 
@@ -252,9 +251,19 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* === 1920x1080 Baseline === */
 .game-page {
+  --topbar-height: clamp(56px, 5vh, 72px);
+  --main-padding: clamp(16px, 2vw, 32px);
+  --board-size: clamp(500px, 60vw, 816px);
+  --board-inner: calc(var(--board-size) - 64px);
+  --sidebar-width: clamp(240px, 22vw, 340px);
+
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  box-sizing: border-box;
 }
 
 /* 顶部导航 */
@@ -262,14 +271,16 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  background: rgba(26, 26, 46, 0.8);
-  backdrop-filter: blur(10px);
+  padding: 0 var(--main-padding);
+  height: var(--topbar-height);
+  background: rgba(26, 26, 46, 0.85);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--card-border);
+  flex-shrink: 0;
 }
 
 .game-topbar__logo {
-  font-size: 20px;
+  font-size: clamp(16px, 1.3vw, 22px);
   color: var(--neon-green);
   font-weight: bold;
   text-shadow: 0 0 10px var(--neon-green-glow);
@@ -278,22 +289,27 @@ onBeforeUnmount(() => {
 .game-topbar__actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 1vw, 16px);
 }
 
 .topbar-btn {
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 3vw, 40px);
+  height: clamp(32px, 3vw, 40px);
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  font-size: 16px;
+  font-size: clamp(14px, 1.2vw, 18px);
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topbar-btn:hover {
+  background: var(--card-border);
 }
 
 .topbar-avatar {
-  width: 40px;
-  height: 40px;
+  width: clamp(36px, 3.5vw, 44px);
+  height: clamp(36px, 3.5vw, 44px);
   background: var(--input-bg);
   border: 2px solid var(--neon-green);
   border-radius: 50%;
@@ -301,101 +317,116 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  font-size: 20px;
+  font-size: clamp(16px, 1.5vw, 22px);
 }
 
 /* 主内容区 */
 .game-main {
   display: flex;
-  gap: 24px;
-  padding: 24px;
+  gap: var(--main-padding);
+  padding: var(--main-padding);
+  flex: 1;
   justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
 }
 
 /* 游戏区 */
 .game-board-section {
-  flex: 0 0 816px;
+  flex: 1;
+  max-width: var(--board-size);
 }
 
 .game-board-wrapper {
   background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(64, 158, 255, 0.1));
   border-radius: var(--card-radius);
-  padding: 32px;
+  padding: clamp(16px, 2vw, 32px);
   border: 1px solid var(--card-border);
 }
 
 .game-board {
   position: relative;
-  width: 752px;
-  height: 752px;
+  width: 100%;
+  aspect-ratio: 1;
+  padding-bottom: 100%;
   margin: 0 auto;
+}
+
+.game-board > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* 预游戏覆盖层 */
 .game-overlay {
-  position: absolute;
-  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(26, 26, 46, 0.95);
   border-radius: var(--card-radius);
+  z-index: 10;
 }
 
 .game-start-card,
 .game-over-card {
   text-align: center;
-  padding: 40px;
+  padding: clamp(20px, 3vw, 48px);
 }
 
 .game-over-card h2 {
-  font-size: 32px;
+  font-size: clamp(24px, 2.5vw, 36px);
   color: var(--neon-green);
-  margin: 0 0 16px;
+  margin: 0 0 clamp(8px, 1.5vh, 20px);
   text-shadow: 0 0 20px var(--neon-green-glow);
 }
 
 .final-score {
-  font-size: 24px;
+  font-size: clamp(18px, 1.8vw, 26px);
   color: var(--text-primary);
-  margin-bottom: 24px;
+  margin-bottom: clamp(16px, 2vh, 28px);
 }
 
 .welcome-section h2 {
-  font-size: 32px;
+  font-size: clamp(24px, 2.5vw, 36px);
   color: var(--neon-green);
-  margin: 0 0 8px;
+  margin: 0 0 clamp(6px, 1vh, 12px);
   text-shadow: 0 0 20px var(--neon-green-glow);
 }
 
 .welcome-section p {
   color: var(--text-secondary);
-  margin: 0 0 24px;
+  font-size: clamp(12px, 1vw, 15px);
+  margin: 0 0 clamp(16px, 2vh, 28px);
 }
 
 .speed-selection {
-  margin-bottom: 24px;
+  margin-bottom: clamp(16px, 2vh, 28px);
 }
 
 .selection-label {
   color: var(--text-secondary);
-  margin-bottom: 12px;
+  font-size: clamp(12px, 0.9vw, 14px);
+  margin-bottom: clamp(8px, 1vh, 14px);
 }
 
 .speed-buttons {
   display: flex;
-  gap: 12px;
+  gap: clamp(8px, 1vw, 16px);
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: clamp(8px, 1vh, 14px);
+  flex-wrap: wrap;
 }
 
 .speed-btn {
-  padding: 12px 24px;
+  padding: clamp(10px, 1vw, 14px) clamp(16px, 1.5vw, 24px);
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: clamp(13px, 1vw, 16px);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -409,19 +440,19 @@ onBeforeUnmount(() => {
 
 .score-hint {
   color: var(--neon-green);
-  font-size: 14px;
+  font-size: clamp(11px, 0.85vw, 14px);
 }
 
 .start-btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 48px;
+  gap: clamp(8px, 1vw, 14px);
+  padding: clamp(14px, 1.5vw, 20px) clamp(32px, 3vw, 56px);
   background: var(--neon-green);
   border: none;
   border-radius: 8px;
   color: #000;
-  font-size: 18px;
+  font-size: clamp(15px, 1.3vw, 20px);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
@@ -432,18 +463,20 @@ onBeforeUnmount(() => {
 }
 
 .start-btn__icon {
-  font-size: 20px;
+  font-size: clamp(16px, 1.3vw, 22px);
 }
 
 /* 反馈消息 */
 .submit-feedback {
   position: fixed;
-  bottom: 24px;
+  bottom: clamp(16px, 2vh, 28px);
   left: 50%;
   transform: translateX(-50%);
-  padding: 12px 24px;
+  padding: clamp(10px, 1.2vh, 16px) clamp(20px, 2vw, 32px);
   border-radius: 8px;
   font-weight: bold;
+  font-size: clamp(13px, 1vw, 16px);
+  z-index: 100;
 }
 
 .submit-feedback.submitting {
@@ -464,11 +497,78 @@ onBeforeUnmount(() => {
 .guest-warning-content p {
   margin: 8px 0;
   color: var(--text-secondary);
+  font-size: clamp(13px, 0.9vw, 15px);
 }
 
 .guest-warning-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+}
+
+/* === Responsive Breakpoints === */
+@media (max-width: 1280px) {
+  .game-main {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .game-board-section {
+    max-width: min(var(--board-size), 100%);
+  }
+
+  :deep(.game-sidebar) {
+    width: 100%;
+    max-width: 600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-main {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .game-board-wrapper {
+    padding: 12px;
+  }
+
+  .game-start-card,
+  .game-over-card {
+    padding: 16px;
+  }
+
+  .speed-buttons {
+    gap: 8px;
+  }
+
+  .speed-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .topbar-avatar {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-topbar {
+    padding: 0 12px;
+  }
+
+  .game-main {
+    padding: 8px;
+  }
+
+  .game-board-wrapper {
+    padding: 8px;
+  }
+
+  .topbar-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
 }
 </style>

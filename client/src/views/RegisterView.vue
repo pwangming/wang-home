@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <header class="register-nav">
       <div class="register-nav__logo">霓虹贪吃蛇</div>
-      <button class="register-nav__close">✕</button>
+      <button class="register-nav__close" @click="$router.push('/')">✕</button>
     </header>
 
     <!-- 装饰元素 -->
@@ -139,7 +139,6 @@ function sendCode() {
     errors.email = '请输入邮箱'
     return
   }
-  // TODO: Call API to send verification code
   codeCooldown.value = 60
   cooldownTimer = setInterval(() => {
     codeCooldown.value--
@@ -198,7 +197,6 @@ async function handleSubmit() {
 }
 
 function handleGoogleRegister() {
-  // TODO: Implement Google OAuth
   console.log('Google register not implemented')
 }
 
@@ -211,12 +209,23 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* === 1920x1080 Baseline === */
 .register-page {
+  --page-padding: clamp(16px, 2vw, 40px);
+  --card-width: clamp(360px, 35vw, 520px);
+  --input-height: clamp(44px, 4vh, 56px);
+  --btn-height: clamp(44px, 5vh, 56px);
+  --avatar-size: clamp(32px, 2.5vw, 44px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-  padding: 0 40px 40px;
+  padding: 0 var(--page-padding) var(--page-padding);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* 导航 */
@@ -224,56 +233,65 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
+  padding: clamp(16px, 2vh, 28px) 0;
+  width: 100%;
   max-width: 1280px;
-  margin: 0 auto;
 }
 
 .register-nav__logo {
-  font-size: 24px;
+  font-size: clamp(18px, 1.5vw, 26px);
   color: var(--text-primary);
+  font-weight: bold;
 }
 
 .register-nav__close {
-  width: 40px;
-  height: 40px;
-  background: none;
-  border: none;
+  width: clamp(32px, 3vw, 44px);
+  height: clamp(32px, 3vw, 44px);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 24px;
+  font-size: clamp(16px, 1.2vw, 22px);
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.register-nav__close:hover {
+  background: var(--card-border);
+  color: var(--text-primary);
 }
 
 /* 装饰 */
 .register-decor {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
+  filter: blur(clamp(80px, 6vw, 120px));
   opacity: 0.4;
+  pointer-events: none;
 }
 
 .register-decor--tl {
-  width: 384px;
-  height: 384px;
+  width: clamp(280px, 20vw, 400px);
+  height: clamp(280px, 20vw, 400px);
   background: rgba(74, 222, 128, 0.3);
-  top: -100px;
-  left: -100px;
+  top: clamp(-100px, -8vh, -150px);
+  left: clamp(-80px, -6vw, -150px);
 }
 
 .register-decor--br {
-  width: 500px;
-  height: 500px;
+  width: clamp(350px, 30vw, 550px);
+  height: clamp(350px, 30vw, 550px);
   background: rgba(64, 158, 255, 0.3);
-  bottom: -200px;
-  right: -100px;
+  bottom: clamp(-150px, -12vh, -250px);
+  right: clamp(-80px, -6vw, -150px);
 }
 
 .register-float-card {
   position: absolute;
-  top: 180px;
-  right: 80px;
-  width: 200px;
-  padding: 20px;
+  top: clamp(100px, 12vh, 160px);
+  right: clamp(40px, 5vw, 100px);
+  width: clamp(160px, 12vw, 200px);
+  padding: clamp(14px, 1.5vw, 20px);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
@@ -281,36 +299,38 @@ onBeforeUnmount(() => {
 }
 
 .float-card__icon {
-  font-size: 24px;
-  margin-bottom: 8px;
+  font-size: clamp(18px, 1.5vw, 24px);
+  margin-bottom: clamp(4px, 0.8vh, 10px);
 }
 
 .float-card__title {
   color: var(--neon-green);
   font-weight: bold;
-  margin-bottom: 4px;
+  font-size: clamp(12px, 1vw, 14px);
+  margin-bottom: clamp(2px, 0.5vh, 6px);
 }
 
 .float-card__desc {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: clamp(10px, 0.8vw, 12px);
+  line-height: 1.4;
 }
 
 .register-players {
   position: absolute;
-  bottom: 120px;
-  left: 80px;
+  bottom: clamp(80px, 10vh, 140px);
+  left: clamp(40px, 5vw, 100px);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 0.5vw, 8px);
 }
 
 .player-avatar {
-  width: 40px;
-  height: 40px;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   border-radius: 50%;
   border: 2px solid var(--bg-gradient-start);
-  margin-left: -10px;
+  margin-left: calc(-1 * clamp(8px, 0.8vw, 12px));
 }
 
 .player-avatar:first-child {
@@ -319,36 +339,39 @@ onBeforeUnmount(() => {
 
 .players-text {
   color: var(--text-secondary);
-  font-size: 12px;
-  margin-left: 8px;
+  font-size: clamp(10px, 0.8vw, 12px);
+  margin-left: clamp(6px, 0.8vw, 12px);
 }
 
 /* 卡片 */
 .register-card {
-  width: 480px;
-  margin: 40px auto;
+  width: var(--card-width);
+  margin: clamp(20px, 4vh, 50px) auto 0;
+  padding: clamp(24px, 2.5vw, 36px) !important;
 }
 
 .register-header {
-  margin-bottom: 32px;
+  margin-bottom: clamp(20px, 2.5vh, 36px);
 }
 
 .register-title {
-  font-size: 24px;
+  font-size: clamp(20px, 1.8vw, 28px);
   color: var(--text-primary);
-  margin: 0 0 8px;
+  margin: 0 0 clamp(6px, 0.8vh, 12px);
 }
 
 .register-subtitle {
   color: var(--text-secondary);
+  font-size: clamp(12px, 0.9vw, 14px);
   margin: 0;
+  line-height: 1.4;
 }
 
 /* 表单 */
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(12px, 1.5vh, 20px);
 }
 
 .form-field {
@@ -357,13 +380,13 @@ onBeforeUnmount(() => {
 
 .form-label {
   display: block;
-  font-size: 14px;
+  font-size: clamp(12px, 0.9vw, 14px);
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: clamp(4px, 0.8vh, 10px);
 }
 
 .form-error {
-  font-size: 12px;
+  font-size: clamp(10px, 0.75vw, 12px);
   color: var(--error-color, #f56c6c);
   margin-top: 4px;
   display: block;
@@ -371,25 +394,26 @@ onBeforeUnmount(() => {
 
 .form-row {
   display: flex;
-  gap: 16px;
+  gap: clamp(10px, 1.5vw, 20px);
 }
 
 .code-input-row {
   display: flex;
-  gap: 12px;
+  gap: clamp(8px, 1vw, 14px);
 }
 
 .code-btn {
-  flex: 0 0 120px;
+  flex: 0 0 clamp(100px, 10vw, 130px);
   height: var(--input-height) !important;
+  font-size: clamp(11px, 0.85vw, 13px) !important;
 }
 
 .register-divider {
   display: flex;
   align-items: center;
-  margin: 16px 0;
+  margin: clamp(8px, 1.2vh, 16px) 0;
   color: var(--text-disabled);
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
 }
 
 .register-divider::before,
@@ -401,18 +425,82 @@ onBeforeUnmount(() => {
 }
 
 .register-divider span {
-  padding: 0 16px;
+  padding: 0 clamp(8px, 1vw, 16px);
 }
 
 .register-footer {
   text-align: center;
-  margin-top: 24px;
+  margin-top: clamp(16px, 2vh, 28px);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: clamp(12px, 0.85vw, 14px);
 }
 
 .link-green {
   color: var(--neon-green);
   text-decoration: none;
+}
+
+/* === Responsive Breakpoints === */
+@media (max-width: 1024px) {
+  .register-float-card {
+    display: none;
+  }
+
+  .register-players {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .register-page {
+    padding: 0 16px 24px;
+  }
+
+  .register-nav {
+    padding: 16px 0;
+  }
+
+  .register-card {
+    width: 100%;
+    max-width: 480px;
+    margin: 16px auto 0;
+    padding: 20px !important;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .code-input-row {
+    flex-direction: column;
+  }
+
+  .code-btn {
+    width: 100%;
+    flex: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-page {
+    padding: 0 12px 16px;
+  }
+
+  .register-nav {
+    padding: 12px 0;
+  }
+
+  .register-nav__logo {
+    font-size: 18px;
+  }
+
+  .register-card {
+    padding: 16px !important;
+  }
+
+  .register-title {
+    font-size: 20px;
+  }
 }
 </style>
