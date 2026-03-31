@@ -1,75 +1,86 @@
 <template>
-  <div class="game-view">
-    <div class="game-header">
-      <h1>霓虹贪吃蛇</h1>
-      <div class="header-actions">
-        <n-button v-if="authStore.user" text @click="handleLogout">
-          退出登录
-        </n-button>
-      </div>
-    </div>
-
-    <div class="game-container">
-      <div class="game-main">
-        <!-- Pre-game state -->
-        <div v-if="!isPlaying" class="pre-game">
-          <div class="welcome-text">
-            <h2>欢迎来到霓虹贪吃蛇</h2>
-            <p v-if="!authStore.user">您当前未登录，游玩成绩不会计入排行榜</p>
-          </div>
-
-          <div class="speed-selection">
-            <div class="selection-label">选择速度倍数</div>
-            <div class="speed-buttons">
-              <n-button
-                v-for="speed in speedOptions"
-                :key="speed.value"
-                :type="selectedSpeed === speed.value ? 'primary' : 'default'"
-                @click="selectedSpeed = speed.value"
-              >
-                {{ speed.label }}
-              </n-button>
-            </div>
-            <div class="score-hint">
-              得分倍数: {{ currentScoreMultiplier }}x
-            </div>
-          </div>
-
-          <n-button type="primary" size="large" @click="startGame">
-            开始游戏
-          </n-button>
-        </div>
-
-        <!-- Playing state -->
-        <div v-else class="game-area">
-          <SnakeGame
-            ref="snakeGameRef"
-            :speed-multiplier="selectedSpeed"
-            :score-multiplier="currentScoreMultiplier"
-            @game-over="handleGameOver"
-          />
+  <div class="game-page">
+    <!-- 顶部导航 -->
+    <header class="game-topbar">
+      <div class="game-topbar__logo">霓虹贪吃蛇</div>
+      <div class="game-topbar__actions">
+        <button class="topbar-btn">🔊</button>
+        <button class="topbar-btn">⚙️</button>
+        <div class="topbar-avatar">
+          <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" alt="" />
+          <span v-else>👤</span>
         </div>
       </div>
+    </header>
 
-      <div class="game-sidebar-wrapper">
-        <GameSidebar
-          :score="currentScore"
-          :speed-multiplier="selectedSpeed"
-          :score-multiplier="currentScoreMultiplier"
-          @open-leaderboard="showLeaderboard = true"
-        />
+    <div class="game-main">
+      <!-- 左侧游戏区 -->
+      <div class="game-board-section">
+        <div class="game-board-wrapper">
+          <div class="game-board">
+            <!-- 预游戏状态 -->
+            <div v-if="!isPlaying" class="game-overlay">
+              <div class="game-start-card">
+                <div class="welcome-section">
+                  <h2>霓虹贪吃蛇</h2>
+                  <p v-if="!authStore.user">您当前未登录，游玩成绩不会计入排行榜</p>
+                </div>
+
+                <div class="speed-selection">
+                  <div class="selection-label">选择速度倍数</div>
+                  <div class="speed-buttons">
+                    <button
+                      v-for="speed in speedOptions"
+                      :key="speed.value"
+                      class="speed-btn"
+                      :class="{ active: selectedSpeed === speed.value }"
+                      @click="selectedSpeed = speed.value"
+                    >
+                      {{ speed.label }}
+                    </button>
+                  </div>
+                  <div class="score-hint">
+                    得分倍数: {{ currentScoreMultiplier }}x
+                  </div>
+                </div>
+
+                <button class="start-btn" @click="startGame">
+                  <span class="start-btn__icon">▶</span>
+                  开始游戏
+                </button>
+              </div>
+            </div>
+
+            <!-- 游戏画布 -->
+            <SnakeGame
+              v-else
+              ref="snakeGameRef"
+              :speed-multiplier="selectedSpeed"
+              :score-multiplier="currentScoreMultiplier"
+              @game-over="handleGameOver"
+            />
+          </div>
+        </div>
       </div>
+
+      <!-- 右侧侧边栏 -->
+      <GameSidebar
+        :score="currentScore"
+        :speed-multiplier="selectedSpeed"
+        :score-multiplier="currentScoreMultiplier"
+        @open-leaderboard="showLeaderboard = true"
+      />
     </div>
 
-    <!-- Score submission feedback -->
+    <!-- 分数提交反馈 -->
     <div v-if="submitStatus" class="submit-feedback" :class="submitStatus">
       {{ submitMessage }}
     </div>
 
-    <!-- Leaderboard Modal -->
+    <!-- 排行榜弹窗 -->
     <LeaderboardModal v-model:show="showLeaderboard" />
 
-    <!-- Guest Warning Modal -->
+    <!-- 游客警告弹窗 -->
     <n-modal v-model:show="showGuestWarning" :mask-closable="false" preset="card" title="提示" style="max-width: 400px;">
       <div class="guest-warning-content">
         <p>您当前未登录，游玩成绩不会计入排行榜和个人最高分</p>
@@ -98,20 +109,16 @@ import { api } from '../lib/api.js'
 const router = useRouter()
 const message = useMessage()
 
-// Game state
 const isPlaying = ref(false)
 const currentScore = ref(0)
 const selectedSpeed = ref(1.0)
 const snakeGameRef = ref(null)
-
-// UI state
 const showLeaderboard = ref(false)
 const showGuestWarning = ref(false)
 const hasSeenGuestWarning = ref(false)
 const submitStatus = ref('')
 const submitMessage = ref('')
 
-// Speed options
 const speedOptions = [
   { value: 1.0, label: '1.0x', scoreMult: 1.0 },
   { value: 1.2, label: '1.2x', scoreMult: 1.5 },
@@ -119,13 +126,11 @@ const speedOptions = [
   { value: 2.0, label: '2.0x', scoreMult: 3.0 }
 ]
 
-// Current score multiplier based on selected speed
 const currentScoreMultiplier = computed(() => {
   const option = speedOptions.find(o => o.value === selectedSpeed.value)
   return option?.scoreMult || 1.0
 })
 
-// Check if user has seen guest warning
 function checkGuestWarning() {
   if (!authStore.user && !hasSeenGuestWarning.value) {
     const seen = localStorage.getItem('guestWarningSeen')
@@ -135,46 +140,37 @@ function checkGuestWarning() {
   }
 }
 
-// Mark guest warning as seen
 function markGuestWarningSeen() {
   hasSeenGuestWarning.value = true
   localStorage.setItem('guestWarningSeen', 'true')
 }
 
-// Continue as guest
 function continueAsGuest() {
   showGuestWarning.value = false
   markGuestWarningSeen()
 }
 
-// Go to login
 function goToLogin() {
   showGuestWarning.value = false
   markGuestWarningSeen()
   router.push('/login')
 }
 
-// Start game
 async function startGame() {
-  // For authenticated users, start a game session
   if (authStore.user) {
     try {
       await api.leaderboard.startSession(selectedSpeed.value)
     } catch (err) {
-      // Non-critical, continue playing
       console.warn('Failed to start session:', err)
     }
   }
-
   isPlaying.value = true
   currentScore.value = 0
-  // Focus the canvas
   setTimeout(() => {
     snakeGameRef.value?.startGame()
   }, 100)
 }
 
-// Handle game over
 async function handleGameOver(finalScore, speedMult, scoreMult) {
   isPlaying.value = false
   currentScore.value = finalScore
@@ -184,19 +180,11 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
     return
   }
 
-  // Submit score
   submitStatus.value = 'submitting'
   submitMessage.value = '分数提交中...'
 
   try {
-    await api.leaderboard.submitScore(
-      null, // sessionId - not using two-phase for now
-      finalScore,
-      speedMult,
-      scoreMult,
-      new Date().toISOString(),
-      null // durationMs
-    )
+    await api.leaderboard.submitScore(null, finalScore, speedMult, scoreMult, new Date().toISOString(), null)
     submitStatus.value = 'success'
     submitMessage.value = '分数提交成功'
   } catch (err) {
@@ -204,19 +192,11 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
     submitMessage.value = '分数提交失败'
   }
 
-  // Clear status after 3 seconds
   setTimeout(() => {
     submitStatus.value = ''
   }, 3000)
 }
 
-// Logout
-async function handleLogout() {
-  await authStore.logout()
-  message.success('已退出登录')
-}
-
-// Initialize
 onMounted(async () => {
   await authStore.init()
   checkGuestWarning()
@@ -224,134 +204,209 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.game-view {
+.game-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 20px;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
 }
 
-.game-header {
+/* 顶部导航 */
+.game-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 16px 24px;
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--card-border);
 }
 
-.game-header h1 {
-  font-size: 24px;
-  color: #4ade80;
-  margin: 0;
-  text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+.game-topbar__logo {
+  font-size: 20px;
+  color: var(--neon-green);
+  font-weight: bold;
+  text-shadow: 0 0 10px var(--neon-green-glow);
 }
 
-.game-container {
+.game-topbar__actions {
   display: flex;
-  gap: 24px;
-  justify-content: center;
-}
-
-.game-main {
-  flex: 0 0 auto;
-}
-
-.pre-game {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  padding: 40px;
-  background: rgba(26, 26, 46, 0.9);
-  border-radius: 8px;
-  border: 1px solid #2a2a4e;
-}
-
-.welcome-text {
-  text-align: center;
-}
-
-.welcome-text h2 {
-  color: #ffffff;
-  margin: 0 0 8px;
-}
-
-.welcome-text p {
-  color: #909399;
-  margin: 0;
-}
-
-.speed-selection {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 12px;
 }
 
+.topbar-btn {
+  width: 36px;
+  height: 36px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.topbar-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--input-bg);
+  border: 2px solid var(--neon-green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 20px;
+}
+
+/* 主内容区 */
+.game-main {
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+  justify-content: center;
+}
+
+/* 游戏区 */
+.game-board-section {
+  flex: 0 0 816px;
+}
+
+.game-board-wrapper {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(64, 158, 255, 0.1));
+  border-radius: var(--card-radius);
+  padding: 32px;
+  border: 1px solid var(--card-border);
+}
+
+.game-board {
+  position: relative;
+  width: 752px;
+  height: 752px;
+  margin: 0 auto;
+}
+
+/* 预游戏覆盖层 */
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 26, 46, 0.95);
+  border-radius: var(--card-radius);
+}
+
+.game-start-card {
+  text-align: center;
+  padding: 40px;
+}
+
+.welcome-section h2 {
+  font-size: 32px;
+  color: var(--neon-green);
+  margin: 0 0 8px;
+  text-shadow: 0 0 20px var(--neon-green-glow);
+}
+
+.welcome-section p {
+  color: var(--text-secondary);
+  margin: 0 0 24px;
+}
+
+.speed-selection {
+  margin-bottom: 24px;
+}
+
 .selection-label {
-  color: #909399;
-  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
 }
 
 .speed-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.speed-btn {
+  padding: 12px 24px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.speed-btn.active,
+.speed-btn:hover {
+  background: var(--neon-green);
+  color: #000;
+  border-color: var(--neon-green);
 }
 
 .score-hint {
-  color: #4ade80;
+  color: var(--neon-green);
   font-size: 14px;
 }
 
-.game-area {
-  padding: 20px;
-  background: rgba(26, 26, 46, 0.9);
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 48px;
+  background: var(--neon-green);
+  border: none;
   border-radius: 8px;
-  border: 1px solid #2a2a4e;
+  color: #000;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
+.start-btn:hover {
+  box-shadow: 0 0 30px var(--neon-green-glow);
+}
+
+.start-btn__icon {
+  font-size: 20px;
+}
+
+/* 反馈消息 */
 .submit-feedback {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 24px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-weight: bold;
 }
 
 .submit-feedback.submitting {
   background: rgba(64, 158, 255, 0.9);
-  color: #ffffff;
+  color: #fff;
 }
 
 .submit-feedback.success {
   background: rgba(74, 222, 128, 0.9);
-  color: #ffffff;
+  color: #fff;
 }
 
 .submit-feedback.error {
   background: rgba(245, 108, 108, 0.9);
-  color: #ffffff;
+  color: #fff;
 }
 
 .guest-warning-content p {
   margin: 8px 0;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .guest-warning-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-}
-
-@media (max-width: 768px) {
-  .game-container {
-    flex-direction: column-reverse;
-    align-items: center;
-  }
-
-  .game-sidebar-wrapper {
-    width: 100%;
-  }
 }
 </style>
