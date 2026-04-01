@@ -1,6 +1,5 @@
-<template>
+﻿<template>
   <div class="game-sidebar">
-    <!-- 得分展示 -->
     <div class="score-section">
       <div class="score-label">当前得分</div>
       <div class="score-value">{{ score.toLocaleString() }}</div>
@@ -8,17 +7,16 @@
       <div class="score-divider" />
 
       <div class="score-info-row">
-        <span class="score-info-label">速度倍数</span>
+        <span class="score-info-label">速度倍率</span>
         <span class="score-info-value">{{ speedMultiplier }}x</span>
       </div>
       <div class="score-info-row">
-        <span class="score-info-label">得分倍数</span>
+        <span class="score-info-label">得分倍率</span>
         <span class="score-info-value">{{ scoreMultiplier }}x</span>
       </div>
     </div>
 
-    <!-- 排行榜入口 -->
-    <button class="leaderboard-btn" @click="$emit('open-leaderboard')">
+    <button data-testid="open-leaderboard-btn" class="leaderboard-btn" @click="$emit('open-leaderboard')">
       <div class="leaderboard-btn__content">
         <span class="leaderboard-btn__icon">🏆</span>
         <span>查看排行榜</span>
@@ -26,30 +24,27 @@
       <span class="leaderboard-btn__arrow">›</span>
     </button>
 
-    <!-- 速度/得分倍数 Bento 网格 -->
     <div class="bento-grid">
       <div class="bento-card">
         <div class="bento-card__icon">⚡</div>
-        <div class="bento-card__label">速度倍数</div>
+        <div class="bento-card__label">速度倍率</div>
         <div class="bento-card__value">{{ speedMultiplier }}x</div>
       </div>
       <div class="bento-card">
-        <div class="bento-card__icon">💰</div>
-        <div class="bento-card__label">得分倍数</div>
+        <div class="bento-card__icon">📈</div>
+        <div class="bento-card__label">得分倍率</div>
         <div class="bento-card__value">{{ scoreMultiplier }}x</div>
       </div>
     </div>
 
-    <!-- 玩家成就预览 -->
     <div class="achievement-preview">
-      <div class="achievement-icon">🎖️</div>
+      <div class="achievement-icon">🏅</div>
       <div class="achievement-info">
         <div class="achievement-label">最近成就</div>
         <div class="achievement-name">{{ latestAchievement }}</div>
       </div>
     </div>
 
-    <!-- 键盘控制 -->
     <div class="controls-section">
       <div class="controls-label">键盘控制</div>
       <div class="direction-keys">
@@ -109,7 +104,6 @@ const latestAchievement = computed(() => {
   overflow: hidden;
 }
 
-/* 得分区域 */
 .score-section {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -156,7 +150,6 @@ const latestAchievement = computed(() => {
   font-weight: bold;
 }
 
-/* 排行榜按钮 */
 .leaderboard-btn {
   display: flex;
   align-items: center;
@@ -192,7 +185,6 @@ const latestAchievement = computed(() => {
   color: var(--text-secondary);
 }
 
-/* Bento 网格 */
 .bento-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -224,7 +216,6 @@ const latestAchievement = computed(() => {
   color: var(--text-primary);
 }
 
-/* 成就预览 */
 .achievement-preview {
   display: flex;
   align-items: center;
@@ -250,7 +241,6 @@ const latestAchievement = computed(() => {
   color: var(--text-primary);
 }
 
-/* 控制区域 */
 .controls-section {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -309,7 +299,6 @@ const latestAchievement = computed(() => {
   text-align: center;
 }
 
-/* === Responsive Breakpoints === */
 @media (max-width: 1280px) {
   .game-sidebar {
     width: 100%;

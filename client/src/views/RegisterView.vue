@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="register-page">
     <!-- 顶部导航 -->
     <header class="register-nav">
@@ -10,7 +10,7 @@
     <div class="register-decor register-decor--tl" />
     <div class="register-decor register-decor--br" />
     <div class="register-float-card">
-      <div class="float-card__icon">🎮</div>
+      <div class="float-card__icon">🎁</div>
       <div class="float-card__title">首充优惠</div>
       <div class="float-card__desc">新用户首次充值享受双倍金币</div>
     </div>
@@ -32,6 +32,7 @@
         <div class="form-field">
           <label class="form-label">邮箱</label>
           <NeonInput
+            data-testid="register-email"
             v-model="form.email"
             placeholder="example@kinetic.com"
             :error="!!errors.email"
@@ -42,27 +43,24 @@
         </div>
 
         <div class="form-field">
-          <label class="form-label">验证码</label>
-          <div class="code-input-row">
-            <NeonInput
-              v-model="form.code"
-              placeholder="输入验证码"
-              :error="!!errors.code"
-            />
-            <NeonButton type="default" class="code-btn" @click="sendCode" :disabled="codeCooldown > 0">
-              {{ codeCooldown > 0 ? `${codeCooldown}s` : '发送验证码' }}
-            </NeonButton>
-          </div>
-          <span v-if="errors.code" class="form-error">{{ errors.code }}</span>
+          <label class="form-label">用户名</label>
+          <NeonInput
+            data-testid="register-username"
+            v-model="form.username"
+            placeholder="game_player_01"
+            :error="!!errors.username"
+          />
+          <span v-if="errors.username" class="form-error">{{ errors.username }}</span>
         </div>
 
         <div class="form-row">
           <div class="form-field">
             <label class="form-label">密码</label>
             <NeonInput
+              data-testid="register-password"
               v-model="form.password"
               type="password"
-              placeholder="••••••••"
+              placeholder="请输入密码"
               :error="!!errors.password"
             />
             <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
@@ -70,18 +68,23 @@
           <div class="form-field">
             <label class="form-label">确认密码</label>
             <NeonInput
+              data-testid="register-confirm-password"
               v-model="form.confirmPassword"
               type="password"
-              placeholder="••••••••"
+              placeholder="请再次输入密码"
               :error="!!errors.confirmPassword"
             />
             <span v-if="errors.confirmPassword" class="form-error">{{ errors.confirmPassword }}</span>
           </div>
         </div>
 
-        <NeonButton type="primary" :loading="isSubmitting" @click="handleSubmit">
+        <NeonButton data-testid="register-submit" type="primary" :loading="isSubmitting" @click="handleSubmit">
           注册
         </NeonButton>
+
+        <div v-if="errorMessage" class="form-error error-alert">
+          {{ errorMessage }}
+        </div>
 
         <div class="register-divider">
           <span>或</span>
@@ -106,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onBeforeUnmount } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import NeonCard from '../components/ui/NeonCard.vue'
 import NeonButton from '../components/ui/NeonButton.vue'
@@ -116,38 +119,20 @@ import { authStore } from '../stores/auth.js'
 const router = useRouter()
 
 const isSubmitting = ref(false)
-const codeCooldown = ref(0)
+const errorMessage = ref('')
 const errors = reactive({
   email: '',
-  code: '',
+  username: '',
   password: '',
   confirmPassword: ''
 })
 
 const form = reactive({
   email: '',
-  code: '',
+  username: '',
   password: '',
   confirmPassword: ''
 })
-
-let cooldownTimer = null
-
-function sendCode() {
-  if (codeCooldown.value > 0) return
-  if (!form.email) {
-    errors.email = '请输入邮箱'
-    return
-  }
-  codeCooldown.value = 60
-  cooldownTimer = setInterval(() => {
-    codeCooldown.value--
-    if (codeCooldown.value <= 0) {
-      clearInterval(cooldownTimer)
-      cooldownTimer = null
-    }
-  }, 1000)
-}
 
 function validate() {
   Object.keys(errors).forEach(k => errors[k] = '')
@@ -157,12 +142,12 @@ function validate() {
     errors.email = '请输入邮箱'
     valid = false
   } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-    errors.email = '邮箱格式不正确'
+    errors.email = '请输入有效的邮箱格式'
     valid = false
   }
 
-  if (!form.code) {
-    errors.code = '请输入验证码'
+  if (!form.username) {
+    errors.username = '请输入用户名'
     valid = false
   }
 
@@ -170,12 +155,12 @@ function validate() {
     errors.password = '请输入密码'
     valid = false
   } else if (form.password.length < 6) {
-    errors.password = '密码至少6位'
+    errors.password = '密码至少需要 6 位'
     valid = false
   }
 
   if (form.password !== form.confirmPassword) {
-    errors.confirmPassword = '两次密码不一致'
+    errors.confirmPassword = '两次输入的密码不一致'
     valid = false
   }
 
@@ -183,14 +168,19 @@ function validate() {
 }
 
 async function handleSubmit() {
+  errorMessage.value = ''
   if (!validate()) return
 
   isSubmitting.value = true
   try {
-    await authStore.register(form.email, form.password, form.code)
+    const data = await authStore.register(form.email, form.password, form.username)
+    if (data?.needsEmailConfirmation) {
+      errorMessage.value = '请先完成邮箱验证后再登录'
+      return
+    }
     router.push('/game')
   } catch (err) {
-    console.error('Register failed:', err)
+    errorMessage.value = err.message || '注册失败'
   } finally {
     isSubmitting.value = false
   }
@@ -200,12 +190,6 @@ function handleGoogleRegister() {
   console.log('Google register not implemented')
 }
 
-onBeforeUnmount(() => {
-  if (cooldownTimer) {
-    clearInterval(cooldownTimer)
-    cooldownTimer = null
-  }
-})
 </script>
 
 <style scoped>
@@ -504,3 +488,6 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+
+

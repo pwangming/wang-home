@@ -229,19 +229,23 @@ function stopGame() {
 
 // Handle keyboard input
 function handleKeyDown(e) {
+  const keyToDirection = {
+    ArrowUp: 'up',
+    ArrowDown: 'down',
+    ArrowLeft: 'left',
+    ArrowRight: 'right'
+  }
+
+  const nextDirection = keyToDirection[e.key]
+  if (nextDirection) {
+    // Prevent instant 180-degree turns.
+    if (nextDirection !== opposites[direction.value]) {
+      direction.value = nextDirection
+    }
+    return
+  }
+
   switch (e.key) {
-    case 'ArrowUp':
-      if (direction.value !== 'up') direction.value = 'up'
-      break
-    case 'ArrowDown':
-      if (direction.value !== 'down') direction.value = 'down'
-      break
-    case 'ArrowLeft':
-      if (direction.value !== 'left') direction.value = 'left'
-      break
-    case 'ArrowRight':
-      if (direction.value !== 'right') direction.value = 'right'
-      break
     case 'Escape':
       stopGame()
       break

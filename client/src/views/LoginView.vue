@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login-page">
     <!-- 装饰元素 -->
     <div class="login-decor login-decor--tl" />
@@ -11,7 +11,7 @@
         <div class="login-brand__label">KINETIC ARCADE</div>
         <h1 class="login-brand__title">霓虹贪吃蛇</h1>
         <p class="login-brand__desc">
-          欢迎回到充满活力的竞技场。体验最流畅的滑动感，挑战全球积分榜，开启您的霓虹贪吃蛇之旅。
+          欢迎回到充满活力的竞技场。体验最流畅的操作手感，挑战全球积分榜，开启你的霓虹贪吃蛇之旅。
         </p>
         <div class="login-brand__avatars">
           <img src="/avatars/1.png" alt="" class="avatar" />
@@ -29,8 +29,9 @@
           <div class="form-field">
             <label class="form-label">用户名或邮箱</label>
             <NeonInput
+              data-testid="login-email"
               v-model="form.email"
-              placeholder="您的账号信息"
+              placeholder="请输入邮箱"
               :error="!!errors.email"
             >
               <template #icon>👤</template>
@@ -41,9 +42,10 @@
           <div class="form-field">
             <label class="form-label">密码</label>
             <NeonInput
+              data-testid="login-password"
               v-model="form.password"
               type="password"
-              placeholder="••••••••"
+              placeholder="请输入密码"
               show-password-toggle
               :error="!!errors.password"
             >
@@ -58,6 +60,7 @@
           </div>
 
           <NeonButton
+            data-testid="login-submit"
             type="primary"
             :loading="isSubmitting"
             @click="handleSubmit"
@@ -145,7 +148,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
-    await authStore.login(form.email, form.password, rememberMe.value)
+    await authStore.login(form.email, form.password)
     router.push('/game')
   } catch (err) {
     errorMessage.value = err.message || '登录失败'
@@ -430,3 +433,7 @@ function handleGoogleLogin() {
   }
 }
 </style>
+
+
+
+

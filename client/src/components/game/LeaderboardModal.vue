@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <n-modal
     :show="show"
     @update:show="$emit('update:show', $event)"
@@ -15,44 +15,28 @@
     </template>
 
     <div class="leaderboard-content">
-      <!-- Tab 切换 -->
       <div class="tabs">
-        <button
-          class="tab"
-          :class="{ active: activeTab === 'all' }"
-          @click="activeTab = 'all'"
-        >
-          全部
-        </button>
-        <button
-          class="tab"
-          :class="{ active: activeTab === 'mine' }"
-          @click="activeTab = 'mine'"
-        >
-          我的排名
-        </button>
+        <button class="tab" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">全部</button>
+        <button class="tab" :class="{ active: activeTab === 'mine' }" @click="activeTab = 'mine'">我的排名</button>
       </div>
 
-      <!-- 表格 -->
       <div class="leaderboard-table">
-        <!-- 表头 -->
         <div class="table-header">
           <div class="col-rank">排名</div>
           <div class="col-player">玩家</div>
           <div class="col-score">分数</div>
-          <div class="col-time">用时</div>
+          <div class="col-time">时间</div>
         </div>
 
-        <!-- 排名列表 -->
         <div class="table-body">
           <div
-            v-for="(entry, index) in displayEntries"
+            v-for="entry in displayEntries"
             :key="entry.id"
             class="table-row"
             :class="[`rank-${entry.rank}`, { highlight: entry.isMine }]"
           >
             <div class="col-rank">
-              <span v-if="entry.rank === 1" class="rank-icon">👑</span>
+              <span v-if="entry.rank === 1" class="rank-icon">🥇</span>
               <span v-else-if="entry.rank === 2" class="rank-icon">🥈</span>
               <span v-else-if="entry.rank === 3" class="rank-icon">🥉</span>
               <span v-else class="rank-num">{{ entry.rank }}</span>
@@ -70,16 +54,14 @@
 
     <template #footer>
       <div class="modal-footer">
-        <NeonButton type="default" @click="$emit('update:show', false)">
-          收起
-        </NeonButton>
+        <NeonButton type="default" @click="$emit('update:show', false)">收起</NeonButton>
       </div>
     </template>
   </n-modal>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { NModal } from 'naive-ui'
 import NeonButton from '../ui/NeonButton.vue'
 import { api } from '../../lib/api.js'
@@ -95,8 +77,8 @@ const entries = ref([])
 const myRank = ref(null)
 
 const displayEntries = computed(() => {
-  if (activeTab.value === 'mine' && myRank.value) {
-    return [myRank.value]
+  if (activeTab.value === 'mine') {
+    return myRank.value ? [myRank.value] : []
   }
   return entries.value
 })
@@ -117,17 +99,47 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-async function fetchLeaderboard() {
-  try {
-    const data = await api.leaderboard.getLeaderboard()
-    entries.value = data.entries || []
-    myRank.value = data.myRank || null
-  } catch (err) {
-    console.error('Failed to fetch leaderboard:', err)
+function normalizeLeaderboardRows(rows) {
+  return rows.map((row, index) => ({
+    id: row.user_id,
+    rank: index + 1,
+    name: row.username || '匿名玩家',
+    avatar: row.avatar_url || null,
+    score: row.best_score || 0,
+    duration: null,
+    isMine: false
+  }))
+}
+
+function normalizeMyRankRow(row) {
+  if (!row) return null
+  return {
+    id: row.user_id,
+    rank: row.rank,
+    name: row.username || '我',
+    avatar: row.avatar_url || null,
+    score: row.best_score || 0,
+    duration: null,
+    isMine: true
   }
 }
 
-import { watch } from 'vue'
+async function fetchLeaderboard() {
+  try {
+    const [listData, myRankData] = await Promise.all([
+      api.leaderboard.list(1, 20),
+      api.leaderboard.getMyRank().catch(() => ({ rank: null }))
+    ])
+
+    entries.value = normalizeLeaderboardRows(listData?.leaderboard || [])
+    myRank.value = normalizeMyRankRow(myRankData?.rank || null)
+  } catch (err) {
+    console.error('Failed to fetch leaderboard:', err)
+    entries.value = []
+    myRank.value = null
+  }
+}
+
 watch(() => props.show, (newVal) => {
   if (newVal) {
     fetchLeaderboard()
@@ -166,7 +178,6 @@ watch(() => props.show, (newVal) => {
   padding: clamp(12px, 1.5vw, 20px) 0;
 }
 
-/* Tabs */
 .tabs {
   display: flex;
   gap: clamp(6px, 0.8vw, 12px);
@@ -194,7 +205,6 @@ watch(() => props.show, (newVal) => {
   border-color: var(--text-secondary);
 }
 
-/* Table */
 .leaderboard-table {
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
@@ -295,7 +305,6 @@ watch(() => props.show, (newVal) => {
   justify-content: center;
 }
 
-/* === Responsive Breakpoints === */
 @media (max-width: 768px) {
   .table-header,
   .table-row {

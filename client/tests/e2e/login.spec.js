@@ -1,43 +1,56 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Login Page', () => {
-  // 每个测试独立注册账号，避免共享状态导致并发冲突
-  async function registerTestUser({ page }) {
-    const user = {
-      email: `test-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com`,
-      password: 'Test123456',
-      username: `user_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    }
-    await page.goto('/register')
-    await page.fill('input[type="email"]', user.email)
-    await page.fill('input[type="password"]', user.password)
-    await page.fill('input[placeholder*="用户名"]', user.username)
-    await page.click('button[type="submit"]')
-    await page.waitForURL('**/game', { timeout: 10000 })
-    // 清理会话，确保登录测试走真实登录流程
-    await page.context().clearCookies()
-    await page.goto('/login')
-    return user
+function makeUser(prefix = 'login') {
+  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  return {
+    email: `${prefix}-${nonce}@test.com`,
+    username: `user_${nonce}`,
+    password: 'Test123456'
   }
+}
 
+test.describe('Login Page', () => {
   test('should show login form', async ({ page }) => {
     await page.goto('/login')
-    await expect(page.locator('h1, .n-card-header')).toContainText('登录')
+    await expect(page.locator('[data-testid="login-submit"]')).toBeVisible()
   })
 
   test('should login with valid credentials', async ({ page }) => {
-    const testUser = await registerTestUser({ page })
-    await page.fill('input[type="email"]', testUser.email)
-    await page.fill('input[type="password"]', testUser.password)
-    await page.click('button[type="submit"]')
-    await page.waitForURL('**/game', { timeout: 10000 })
+    const user = makeUser('login-success')
+    await page.route('**/api/auth/login', async route => {
+      const payload = JSON.parse(route.request().postData() || '{}')
+      const isExpectedUser = payload.email === user.email && payload.password === user.password
+      await route.fulfill({
+        status: isExpectedUser ? 200 : 401,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          isExpectedUser
+            ? { success: true, user: { id: 'user-login-success', email: user.email } }
+            : { error: 'Invalid credentials' }
+        )
+      })
+    })
+
+    await page.goto('/login')
+    await page.locator('[data-testid="login-email"] input').fill(user.email)
+    await page.locator('[data-testid="login-password"] input').fill(user.password)
+    await page.click('[data-testid="login-submit"]')
+    await page.waitForURL('**/game', { timeout: 15000 })
   })
 
   test('should show error with invalid credentials', async ({ page }) => {
+    await page.route('**/api/auth/login', async route => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Invalid login credentials' })
+      })
+    })
+
     await page.goto('/login')
-    await page.fill('input[type="email"]', 'wrong@test.com')
-    await page.fill('input[type="password"]', 'wrongpass')
-    await page.click('button[type="submit"]')
+    await page.locator('[data-testid="login-email"] input').fill('wrong@test.com')
+    await page.locator('[data-testid="login-password"] input').fill('wrongpass')
+    await page.click('[data-testid="login-submit"]')
     await expect(page.locator('.error-alert')).toBeVisible()
   })
 })

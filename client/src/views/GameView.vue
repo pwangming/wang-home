@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <div class="game-page">
     <!-- 顶部导航 -->
     <header class="game-topbar">
       <div class="game-topbar__logo">霓虹贪吃蛇</div>
       <div class="game-topbar__actions">
-        <button class="topbar-btn">🔊</button>
+        <button class="topbar-btn">🔔</button>
         <button class="topbar-btn">⚙️</button>
         <div class="topbar-avatar">
           <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" alt="" />
@@ -18,21 +18,22 @@
       <div class="game-board-section">
         <div class="game-board-wrapper">
           <div class="game-board">
-            <!-- 预游戏状态 or 游戏结束状态 -->
+            <!-- 预游戏状态或游戏结束状态 -->
             <div v-if="!isPlaying" class="game-overlay">
-              <div v-if="!lastGameScore" class="game-start-card">
+              <div v-if="lastGameScore === null" class="game-start-card">
                 <div class="welcome-section">
                   <h2>霓虹贪吃蛇</h2>
-                  <p v-if="!authStore.user">您当前未登录，游玩成绩不会计入排行榜</p>
+                  <p v-if="!authStore.user">当前未登录，游玩成绩不会计入排行榜</p>
                 </div>
 
                 <div class="speed-selection">
-                  <div class="selection-label">选择速度倍数</div>
+                  <div class="selection-label">选择速度倍率</div>
                   <div class="speed-buttons">
                     <button
                       v-for="speed in speedOptions"
                       :key="speed.value"
                       class="speed-btn"
+                      :data-testid="`speed-option-${speed.value}`"
                       :class="{ active: selectedSpeed === speed.value }"
                       @click="selectedSpeed = speed.value"
                     >
@@ -40,26 +41,27 @@
                     </button>
                   </div>
                   <div class="score-hint">
-                    得分倍数: {{ currentScoreMultiplier }}x
+                    得分倍率: {{ currentScoreMultiplier }}x
                   </div>
                 </div>
 
-                <button class="start-btn" @click="startGame">
+                <button data-testid="game-start-btn" class="start-btn" @click="startGame">
                   <span class="start-btn__icon">▶</span>
                   开始游戏
                 </button>
               </div>
               <div v-else class="game-over-card">
                 <h2>游戏结束</h2>
-                <div class="final-score">最终得分: {{ lastGameScore.toLocaleString() }}</div>
+                <div class="final-score">最终得分：{{ lastGameScore.toLocaleString() }}</div>
 
                 <div class="speed-selection">
-                  <div class="selection-label">选择速度倍数</div>
+                  <div class="selection-label">选择速度倍率</div>
                   <div class="speed-buttons">
                     <button
                       v-for="speed in speedOptions"
                       :key="speed.value"
                       class="speed-btn"
+                      :data-testid="`speed-option-${speed.value}`"
                       :class="{ active: selectedSpeed === speed.value }"
                       @click="selectedSpeed = speed.value"
                     >
@@ -67,11 +69,11 @@
                     </button>
                   </div>
                   <div class="score-hint">
-                    得分倍数: {{ currentScoreMultiplier }}x
+                    得分倍率: {{ currentScoreMultiplier }}x
                   </div>
                 </div>
 
-                <button class="start-btn" @click="playAgain">
+                <button data-testid="game-retry-btn" class="start-btn" @click="playAgain">
                   <span class="start-btn__icon">▶</span>
                   再来一局
                 </button>
@@ -90,7 +92,7 @@
         </div>
       </div>
 
-      <!-- 右侧侧边栏 -->
+      <!-- 右侧边栏 -->
       <GameSidebar
         :score="currentScore"
         :speed-multiplier="selectedSpeed"
@@ -100,7 +102,7 @@
     </div>
 
     <!-- 分数提交反馈 -->
-    <div v-if="submitStatus" class="submit-feedback" :class="submitStatus">
+    <div v-if="submitStatus" data-testid="submit-feedback" class="submit-feedback" :class="submitStatus">
       {{ submitMessage }}
     </div>
 
@@ -110,13 +112,13 @@
     <!-- 游客警告弹窗 -->
     <n-modal v-model:show="showGuestWarning" :mask-closable="false" preset="card" title="提示" style="max-width: 400px;">
       <div class="guest-warning-content">
-        <p>您当前未登录，游玩成绩不会计入排行榜和个人最高分</p>
-        <p>登录后即可保存成绩并参与排行榜竞争</p>
+        <p>你当前未登录，游戏成绩不会计入排行榜和个人最高分。</p>
+        <p>登录后即可保存成绩并参与排行榜竞争。</p>
       </div>
       <template #footer>
         <div class="guest-warning-actions">
-          <n-button @click="goToLogin">登录/注册</n-button>
-          <n-button type="primary" @click="continueAsGuest">继续游戏</n-button>
+          <n-button data-testid="guest-login-btn" @click="goToLogin">登录/注册</n-button>
+          <n-button data-testid="guest-continue-btn" type="primary" @click="continueAsGuest">继续游戏</n-button>
         </div>
       </template>
     </n-modal>
@@ -138,7 +140,7 @@ const message = useMessage()
 
 const isPlaying = ref(false)
 const currentScore = ref(0)
-const lastGameScore = ref(0)
+const lastGameScore = ref(null)
 const selectedSpeed = ref(1.0)
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
@@ -208,7 +210,7 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
   lastGameScore.value = finalScore
 
   if (!authStore.user) {
-    message.warning('成绩未记录')
+    message.warning('未登录状态下分数不会被记录')
     return
   }
 
@@ -230,7 +232,7 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
 }
 
 function playAgain() {
-  lastGameScore.value = 0
+  lastGameScore.value = null
 }
 
 onMounted(async () => {
@@ -255,15 +257,19 @@ onBeforeUnmount(() => {
 .game-page {
   --topbar-height: clamp(56px, 5vh, 72px);
   --main-padding: clamp(16px, 2vw, 32px);
-  --board-size: clamp(500px, 60vw, 816px);
-  --board-inner: calc(var(--board-size) - 64px);
+  --board-size: min(
+    clamp(500px, 60vw, 816px),
+    calc(100vh - var(--topbar-height) - (var(--main-padding) * 2))
+  );
   --sidebar-width: clamp(240px, 22vw, 340px);
 
   display: flex;
   flex-direction: column;
+  height: 100dvh;
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 顶部导航 */
@@ -320,12 +326,13 @@ onBeforeUnmount(() => {
   font-size: clamp(16px, 1.5vw, 22px);
 }
 
-/* 主内容区 */
+/* 主要内容区 */
 .game-main {
   display: flex;
   gap: var(--main-padding);
   padding: var(--main-padding);
   flex: 1;
+  min-height: 0;
   justify-content: center;
   align-items: flex-start;
   overflow: hidden;
@@ -348,7 +355,6 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  padding-bottom: 100%;
   margin: 0 auto;
 }
 
@@ -514,7 +520,13 @@ onBeforeUnmount(() => {
   }
 
   .game-board-section {
+    width: 100%;
+    flex: none;
     max-width: min(var(--board-size), 100%);
+  }
+
+  .game-board-wrapper {
+    width: 100%;
   }
 
   :deep(.game-sidebar) {
@@ -572,3 +584,5 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+

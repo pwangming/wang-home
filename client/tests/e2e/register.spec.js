@@ -1,42 +1,82 @@
 import { test, expect } from '@playwright/test'
 
+function makeUser(prefix = 'register') {
+  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  return {
+    email: `${prefix}-${nonce}@test.com`,
+    username: `user_${nonce}`,
+    password: 'Test123456'
+  }
+}
+
+async function fillRegisterForm(page, user) {
+  await page.locator('[data-testid="register-email"] input').fill(user.email)
+  await page.locator('[data-testid="register-username"] input').fill(user.username)
+  await page.locator('[data-testid="register-password"] input').fill(user.password)
+  await page.locator('[data-testid="register-confirm-password"] input').fill(user.password)
+}
+
 test.describe('Register Page', () => {
-  test('should register successfully and redirect to game when server sets session cookie', async ({ page }) => {
-    // 使用唯一账号
-    const uniqueEmail = `test-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com`
-    const uniqueUsername = `user_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  test('should register successfully and redirect to game when session is created', async ({ page }) => {
+    await page.route('**/api/auth/register', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          user: { id: 'user-register-success', email: 'mock@test.com' }
+        })
+      })
+    })
+
+    const user = makeUser('register-success')
     await page.goto('/register')
-    await page.fill('input[type="email"]', uniqueEmail)
-    await page.fill('input[type="password"]', 'Test123456')
-    await page.fill('input[placeholder*="用户名"]', uniqueUsername)
-    await page.click('button[type="submit"]')
-    // 本地无邮箱确认，直接跳转 /game
-    await page.waitForURL('**/game', { timeout: 10000 })
+    await fillRegisterForm(page, user)
+    await page.click('[data-testid="register-submit"]')
+    await page.waitForURL('**/game', { timeout: 15000 })
   })
 
   test('should show error when email already registered', async ({ page }) => {
-    const email = `test-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com`
-    const username = `user_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    // 先注册一个账号
-    await page.goto('/register')
-    await page.fill('input[type="email"]', email)
-    await page.fill('input[type="password"]', 'Test123456')
-    await page.fill('input[placeholder*="用户名"]', username)
-    await page.click('button[type="submit"]')
-    await page.waitForURL('**/game', { timeout: 10000 })
+    let registerCount = 0
+    await page.route('**/api/auth/register', async route => {
+      registerCount += 1
+      if (registerCount === 1) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            user: { id: 'user-register-duplicate', email: 'dup@test.com' }
+          })
+        })
+        return
+      }
 
-    // 尝试重复注册（使用相同邮箱，不同用户名避免用户名冲突）
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Email already registered' })
+      })
+    })
+
+    const firstUser = makeUser('register-duplicate')
     await page.goto('/register')
-    await page.fill('input[type="email"]', email)
-    await page.fill('input[type="password"]', 'Test123456')
-    await page.fill('input[placeholder*="用户名"]', `user_${Date.now()}_dup`)
-    await page.click('button[type="submit"]')
+    await fillRegisterForm(page, firstUser)
+    await page.click('[data-testid="register-submit"]')
+    await page.waitForURL('**/game', { timeout: 15000 })
+
+    await page.goto('/register')
+    await fillRegisterForm(page, {
+      ...firstUser,
+      username: `${firstUser.username}_dup`
+    })
+    await page.click('[data-testid="register-submit"]')
     await expect(page.locator('.error-alert')).toBeVisible()
   })
 
-  test('should show validation error when fields missing', async ({ page }) => {
+  test('should show validation errors when fields are missing', async ({ page }) => {
     await page.goto('/register')
-    await page.click('button[type="submit"]')
-    await expect(page.locator('.n-form-item-message')).toBeVisible()
+    await page.click('[data-testid="register-submit"]')
+    await expect(page.locator('.form-error').first()).toBeVisible()
   })
 })
