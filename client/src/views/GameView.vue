@@ -94,6 +94,7 @@
 
       <!-- 右侧边栏 -->
       <GameSidebar
+        class="game-sidebar-panel"
         :score="currentScore"
         :speed-multiplier="selectedSpeed"
         :score-multiplier="currentScoreMultiplier"
@@ -151,6 +152,8 @@ const submitMessage = ref('')
 
 let gameStartTimer = null
 let submitStatusTimer = null
+let previousBodyOverflow = ''
+let previousHtmlOverflow = ''
 
 const speedOptions = [
   { value: 1.0, label: '1.0x', scoreMult: 1.0 },
@@ -236,11 +239,29 @@ function playAgain() {
 }
 
 onMounted(async () => {
+  const htmlEl = document.documentElement
+  const bodyEl = document.body
+
+  previousHtmlOverflow = htmlEl.style.overflow
+  previousBodyOverflow = document.body.style.overflow
+  htmlEl.classList.add('game-page-overflow-lock')
+  bodyEl.classList.add('game-page-overflow-lock')
+  htmlEl.style.overflow = 'hidden'
+  bodyEl.style.overflow = 'hidden'
+
   await authStore.init()
   checkGuestWarning()
 })
 
 onBeforeUnmount(() => {
+  const htmlEl = document.documentElement
+  const bodyEl = document.body
+
+  htmlEl.classList.remove('game-page-overflow-lock')
+  bodyEl.classList.remove('game-page-overflow-lock')
+  htmlEl.style.overflow = previousHtmlOverflow
+  bodyEl.style.overflow = previousBodyOverflow
+
   if (gameStartTimer) {
     clearTimeout(gameStartTimer)
     gameStartTimer = null
@@ -255,21 +276,33 @@ onBeforeUnmount(() => {
 <style scoped>
 /* === 1920x1080 Baseline === */
 .game-page {
+  --viewport-height: 100vh;
   --topbar-height: clamp(56px, 5vh, 72px);
   --main-padding: clamp(16px, 2vw, 32px);
+  --board-wrapper-padding: clamp(12px, 1.6vw, 24px);
   --board-size: min(
-    clamp(500px, 60vw, 816px),
-    calc(100vh - var(--topbar-height) - (var(--main-padding) * 2))
+    clamp(420px, 60vw, 816px),
+    calc(
+      var(--viewport-height) - var(--topbar-height) - (var(--main-padding) * 2) - (var(--board-wrapper-padding) * 2) - 2px
+    )
   );
   --sidebar-width: clamp(240px, 22vw, 340px);
 
   display: flex;
   flex-direction: column;
+  height: 100vh;
   height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
   box-sizing: border-box;
   overflow: hidden;
+}
+
+@supports (height: 100dvh) {
+  .game-page {
+    --viewport-height: 100dvh;
+  }
 }
 
 /* 顶部导航 */
@@ -342,12 +375,18 @@ onBeforeUnmount(() => {
 .game-board-section {
   flex: 1;
   max-width: var(--board-size);
+  align-self: flex-start;
+}
+
+.game-sidebar-panel {
+  align-self: flex-start;
+  margin-top: 0;
 }
 
 .game-board-wrapper {
   background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(64, 158, 255, 0.1));
   border-radius: var(--card-radius);
-  padding: clamp(16px, 2vw, 32px);
+  padding: var(--board-wrapper-padding);
   border: 1px solid var(--card-border);
 }
 
@@ -513,7 +552,7 @@ onBeforeUnmount(() => {
 }
 
 /* === Responsive Breakpoints === */
-@media (max-width: 1280px) {
+@media (max-width: 1180px) {
   .game-main {
     flex-direction: column;
     align-items: center;
@@ -529,7 +568,7 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
-  :deep(.game-sidebar) {
+  .game-sidebar-panel {
     width: 100%;
     max-width: 600px;
   }

@@ -299,7 +299,64 @@ const latestAchievement = computed(() => {
   text-align: center;
 }
 
-@media (max-width: 1280px) {
+@media (max-height: 900px) and (min-width: 1181px) {
+  .game-sidebar {
+    --section-padding: 12px;
+    --gap: 8px;
+    --score-size: 40px;
+    --key-size: 42px;
+  }
+
+  .achievement-preview {
+    gap: 10px;
+  }
+
+  .controls-label,
+  .direction-keys {
+    margin-bottom: 8px;
+  }
+
+  .pause-key {
+    padding: 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-height: 820px) and (min-width: 1181px) {
+  .game-sidebar {
+    --section-padding: 10px;
+    --gap: 6px;
+    --score-size: 34px;
+    --key-size: 36px;
+    max-height: 100%;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .score-label,
+  .score-info-label,
+  .bento-card__label,
+  .achievement-label,
+  .controls-label {
+    font-size: 11px;
+  }
+
+  .bento-card__icon {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .direction-keys {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .pause-key {
+    padding: 6px;
+  }
+}
+
+@media (max-width: 1180px) {
   .game-sidebar {
     width: 100%;
     max-width: 600px;

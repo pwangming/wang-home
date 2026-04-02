@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <header class="register-nav">
       <div class="register-nav__logo">霓虹贪吃蛇</div>
-      <button class="register-nav__close" @click="$router.push('/')">✕</button>
+      <button class="register-nav__game" @click="router.push('/game')">直接游戏</button>
     </header>
 
     <!-- 装饰元素 -->
@@ -228,21 +228,22 @@ function handleGoogleRegister() {
   font-weight: bold;
 }
 
-.register-nav__close {
-  width: clamp(32px, 3vw, 44px);
-  height: clamp(32px, 3vw, 44px);
+.register-nav__game {
+  height: clamp(34px, 3.5vw, 44px);
+  padding: 0 clamp(14px, 1.5vw, 20px);
   background: var(--input-bg);
   border: 1px solid var(--card-border);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: clamp(16px, 1.2vw, 22px);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-size: clamp(12px, 0.9vw, 14px);
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.register-nav__close:hover {
-  background: var(--card-border);
-  color: var(--text-primary);
+.register-nav__game:hover {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 12px var(--neon-green-glow);
 }
 
 /* 装饰 */
@@ -272,8 +273,10 @@ function handleGoogleRegister() {
 
 .register-float-card {
   position: absolute;
-  top: clamp(100px, 12vh, 160px);
-  right: clamp(40px, 5vw, 100px);
+  bottom: calc(clamp(80px, 10vh, 140px) + clamp(62px, 8vh, 100px));
+  left: clamp(40px, 5vw, 100px);
+  top: auto;
+  right: auto;
   width: clamp(160px, 12vw, 200px);
   padding: clamp(14px, 1.5vw, 20px);
   background: var(--card-bg);
@@ -356,10 +359,17 @@ function handleGoogleRegister() {
   display: flex;
   flex-direction: column;
   gap: clamp(12px, 1.5vh, 20px);
+  width: 100%;
 }
 
 .form-field {
   flex: 1;
+  min-width: 0;
+}
+
+.form-field :deep(.neon-input) {
+  width: 100%;
+  max-width: 100%;
 }
 
 .form-label {
@@ -379,6 +389,11 @@ function handleGoogleRegister() {
 .form-row {
   display: flex;
   gap: clamp(10px, 1.5vw, 20px);
+  width: 100%;
+}
+
+.form-row > .form-field {
+  min-width: 0;
 }
 
 .code-input-row {

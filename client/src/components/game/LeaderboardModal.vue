@@ -4,16 +4,10 @@
     @update:show="$emit('update:show', $event)"
     :mask-closable="true"
     preset="card"
+    title="排行榜"
     class="leaderboard-modal"
     :style="{ width: modalWidth }"
   >
-    <template #header>
-      <div class="modal-header">
-        <h2 class="modal-title">排行榜</h2>
-        <button class="close-btn" @click="$emit('update:show', false)">✕</button>
-      </div>
-    </template>
-
     <div class="leaderboard-content">
       <div class="tabs">
         <button class="tab" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">全部</button>
@@ -52,18 +46,12 @@
       </div>
     </div>
 
-    <template #footer>
-      <div class="modal-footer">
-        <NeonButton type="default" @click="$emit('update:show', false)">收起</NeonButton>
-      </div>
-    </template>
   </n-modal>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { NModal } from 'naive-ui'
-import NeonButton from '../ui/NeonButton.vue'
 import { api } from '../../lib/api.js'
 
 const props = defineProps({
@@ -149,30 +137,6 @@ watch(() => props.show, (newVal) => {
 
 <style scoped>
 /* === 1920x1080 Baseline === */
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-title {
-  font-size: clamp(18px, 1.5vw, 22px);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: clamp(16px, 1.2vw, 22px);
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px 8px;
-}
-
-.close-btn:hover {
-  color: var(--text-primary);
-}
 
 .leaderboard-content {
   padding: clamp(12px, 1.5vw, 20px) 0;
@@ -298,11 +262,6 @@ watch(() => props.show, (newVal) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: center;
 }
 
 @media (max-width: 768px) {

@@ -57,6 +57,9 @@ function togglePassword() {
 .neon-input {
   display: flex;
   align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--input-radius);
@@ -77,6 +80,8 @@ function togglePassword() {
 
 .neon-input__field {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   background: transparent;
   border: none;
   outline: none;
