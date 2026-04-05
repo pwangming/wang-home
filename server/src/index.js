@@ -4,6 +4,7 @@ import bodyParser from 'koa-bodyparser'
 import session from 'koa-session'
 import { createClient } from '@supabase/supabase-js'
 import createAuthRouter from './routes/auth.js'
+import createLeaderboardRouter from './routes/leaderboard.js'
 
 const app = new Koa()
 app.keys = [process.env.SESSION_SECRET || 'dev-only-session-secret']
@@ -40,6 +41,10 @@ app.use(async (ctx, next) => {
 const authRouter = createAuthRouter()
 app.use(authRouter.routes())
 app.use(authRouter.allowedMethods())
+
+const leaderboardRouter = createLeaderboardRouter()
+app.use(leaderboardRouter.routes())
+app.use(leaderboardRouter.allowedMethods())
 
 const PORT = process.env.PORT || 4000
 app.listen(PORT, () => {
