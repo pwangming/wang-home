@@ -7,7 +7,18 @@ import createAuthRouter from './routes/auth.js'
 import createLeaderboardRouter from './routes/leaderboard.js'
 
 const app = new Koa()
-app.keys = [process.env.SESSION_SECRET || 'dev-only-session-secret']
+
+const sessionSecret = process.env.SESSION_SECRET
+if (!sessionSecret && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: SESSION_SECRET environment variable is required in production')
+  process.exit(1)
+}
+app.keys = [sessionSecret || 'dev-only-session-secret']
+
+if (process.env.NODE_ENV === 'production' && (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY)) {
+  console.error('FATAL: SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required in production')
+  process.exit(1)
+}
 
 // Create Supabase client for the app
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
