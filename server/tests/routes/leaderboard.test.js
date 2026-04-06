@@ -45,8 +45,7 @@ const mockFrom = jest.fn(() => ({
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
-  limit: jest.fn().mockReturnThis(),
-  single: jest.fn(),
+  range: jest.fn(),
   maybeSingle: jest.fn(),
   insert: jest.fn().mockReturnThis(),
   update: jest.fn().mockReturnThis(),
@@ -94,8 +93,7 @@ describe('Leaderboard Routes', () => {
       mockFrom.mockReturnValue({
         select: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: mockData, error: null })
+        range: jest.fn().mockResolvedValue({ data: mockData, error: null })
       })
 
       app = leaderboardRouter()
@@ -108,8 +106,7 @@ describe('Leaderboard Routes', () => {
       mockFrom.mockReturnValue({
         select: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: [], error: null })
+        range: jest.fn().mockResolvedValue({ data: [], error: null })
       })
 
       app = leaderboardRouter()

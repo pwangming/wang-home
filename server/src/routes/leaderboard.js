@@ -59,6 +59,8 @@ function createLeaderboardRouter() {
   router.get('/leaderboard', async (ctx) => {
     const page = parseInt(ctx.query.page) || 1
     const pageSize = Math.min(parseInt(ctx.query.pageSize) || 20, 100)
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
 
     const supabase = getSupabase()
     const { data, error } = await supabase
@@ -67,8 +69,7 @@ function createLeaderboardRouter() {
       .order('best_score', { ascending: false })
       .order('best_score_at', { ascending: true })
       .order('user_id', { ascending: true })
-      .limit(pageSize)
-      .single()
+      .range(from, to)
 
     if (error) {
       ctx.status = 500
