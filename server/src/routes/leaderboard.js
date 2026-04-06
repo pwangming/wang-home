@@ -8,7 +8,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 
 function createLeaderboardRouter() {
-  const router = new Router()
+  const router = new Router({ prefix: '/api' })
 
   // Valid speed multipliers
   const VALID_SPEED_MULTIPLIERS = [1.0, 1.2, 1.5, 2.0]

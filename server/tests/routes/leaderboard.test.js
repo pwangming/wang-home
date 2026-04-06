@@ -84,8 +84,8 @@ describe('Leaderboard Routes', () => {
     })
   })
 
-  // ========== GET /leaderboard ==========
-  describe('GET /leaderboard', () => {
+  // ========== GET /api/leaderboard ==========
+  describe('GET /api/leaderboard', () => {
     test('returns paginated ranking ordered by best_score desc', async () => {
       const mockData = [
         { user_id: '1', username: 'alice', best_score: 100, best_score_at: '2024-01-01' },
@@ -99,7 +99,7 @@ describe('Leaderboard Routes', () => {
       })
 
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'GET', '/leaderboard?page=1&pageSize=20')
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard?page=1&pageSize=20')
       expect(res.status).toBe(200)
       expect(res.body.leaderboard).toEqual(mockData)
     })
@@ -113,17 +113,17 @@ describe('Leaderboard Routes', () => {
       })
 
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'GET', '/leaderboard?page=1&pageSize=20')
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard?page=1&pageSize=20')
       expect(res.status).toBe(200)
       expect(res.body.leaderboard).toEqual([])
     })
   })
 
-  // ========== GET /leaderboard/rank/me ==========
-  describe('GET /leaderboard/rank/me', () => {
+  // ========== GET /api/leaderboard/rank/me ==========
+  describe('GET /api/leaderboard/rank/me', () => {
     test('returns 401 when no authorization header', async () => {
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'GET', '/leaderboard/rank/me', null, {})
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard/rank/me', null, {})
       expect(res.status).toBe(401)
     })
 
@@ -135,7 +135,7 @@ describe('Leaderboard Routes', () => {
       })
 
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'GET', '/leaderboard/rank/me', null, {
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard/rank/me', null, {
         Cookie: 'session=valid-token'
       }, [mockAuthMiddleware])
       expect(res.status).toBe(200)
@@ -176,7 +176,7 @@ describe('Leaderboard Routes', () => {
       })
 
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'GET', '/leaderboard/rank/me', null, {
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard/rank/me', null, {
         Cookie: 'session=valid-token'
       }, [mockAuthMiddleware])
       expect(res.status).toBe(200)
@@ -184,11 +184,11 @@ describe('Leaderboard Routes', () => {
     })
   })
 
-  // ========== POST /leaderboard ==========
-  describe('POST /leaderboard', () => {
+  // ========== POST /api/leaderboard ==========
+  describe('POST /api/leaderboard', () => {
     test('returns 401 when unauthenticated', async () => {
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'POST', '/leaderboard', {
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
         score: 100,
         speedMultiplier: 1.0,
         scoreMultiplier: 1.0
@@ -199,7 +199,7 @@ describe('Leaderboard Routes', () => {
 
     test('returns 400 when score is missing', async () => {
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'POST', '/leaderboard', {
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
         speedMultiplier: 1.0,
         scoreMultiplier: 1.0
       }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
@@ -209,7 +209,7 @@ describe('Leaderboard Routes', () => {
 
     test('returns 400 when score is negative', async () => {
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'POST', '/leaderboard', {
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
         score: -10,
         speedMultiplier: 1.0,
         scoreMultiplier: 1.0
@@ -220,7 +220,7 @@ describe('Leaderboard Routes', () => {
 
     test('returns 400 when speedMultiplier is invalid', async () => {
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'POST', '/leaderboard', {
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
         score: 100,
         speedMultiplier: 0,
         scoreMultiplier: 1.0
@@ -241,7 +241,7 @@ describe('Leaderboard Routes', () => {
       })
 
       app = leaderboardRouter()
-      const res = await simulateRequest(app, 'POST', '/leaderboard', {
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
         score: 100,
         speedMultiplier: 1.5,
         scoreMultiplier: 2.0

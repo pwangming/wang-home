@@ -8,7 +8,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 
 function createAuthRouter() {
-  const router = new Router()
+  const router = new Router({ prefix: '/api/auth' })
 
   // Create a supabase client for this router
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)

@@ -69,29 +69,29 @@ describe('Auth Routes', () => {
     mockFrom.mockReset()
   })
 
-  // ========== /register ==========
-  describe('POST /register', () => {
+  // ========== /api/auth/register ==========
+  describe('POST /api/auth/register', () => {
     test('returns 400 when email is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/register', { password: '123456', username: 'test' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', { password: '123456', username: 'test' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('email, password and username are required')
     })
 
     test('returns 400 when password is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/register', { email: 'test@test.com', username: 'test' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', { email: 'test@test.com', username: 'test' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('email, password and username are required')
     })
 
     test('returns 400 when username is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/register', { email: 'test@test.com', password: '123456' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', { email: 'test@test.com', password: '123456' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('email, password and username are required')
     })
 
     test('returns 400 when email already exists', async () => {
       mockAuth.signUp.mockResolvedValue({ data: null, error: { message: 'User already registered' } })
-      const res = await simulateRequest(app, 'POST', '/register', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', {
         email: 'test@test.com', password: '123456', username: 'test'
       })
       expect(res.status).toBe(400)
@@ -114,7 +114,7 @@ describe('Auth Routes', () => {
         })
       })
 
-      const res = await simulateRequest(app, 'POST', '/register', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', {
         email: 'test@test.com', password: '123456', username: 'test'
       })
       expect(res.status).toBe(200)
@@ -136,7 +136,7 @@ describe('Auth Routes', () => {
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
       })
 
-      const res = await simulateRequest(app, 'POST', '/register', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', {
         email: 'test@test.com', password: '123456', username: 'test'
       })
       expect(res.status).toBe(500)
@@ -150,7 +150,7 @@ describe('Auth Routes', () => {
         error: null
       })
 
-      const res = await simulateRequest(app, 'POST', '/register', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/register', {
         email: 'test@test.com', password: '123456', username: 'test'
       })
       expect(res.status).toBe(200)
@@ -159,23 +159,23 @@ describe('Auth Routes', () => {
     })
   })
 
-  // ========== /login ==========
-  describe('POST /login', () => {
+  // ========== /api/auth/login ==========
+  describe('POST /api/auth/login', () => {
     test('returns 400 when email is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/login', { password: '123456' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', { password: '123456' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('email and password are required')
     })
 
     test('returns 400 when password is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/login', { email: 'test@test.com' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', { email: 'test@test.com' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('email and password are required')
     })
 
     test('returns 401 when user not found', async () => {
       mockAuth.signInWithPassword.mockResolvedValue({ data: null, error: { message: 'Invalid login credentials' } })
-      const res = await simulateRequest(app, 'POST', '/login', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', {
         email: 'test@test.com', password: 'wrong'
       })
       expect(res.status).toBe(401)
@@ -184,7 +184,7 @@ describe('Auth Routes', () => {
 
     test('returns 401 when wrong password', async () => {
       mockAuth.signInWithPassword.mockResolvedValue({ data: null, error: { message: 'Invalid login credentials' } })
-      const res = await simulateRequest(app, 'POST', '/login', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', {
         email: 'test@test.com', password: 'wrong'
       })
       expect(res.status).toBe(401)
@@ -199,7 +199,7 @@ describe('Auth Routes', () => {
         error: null
       })
 
-      const res = await simulateRequest(app, 'POST', '/login', {
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', {
         email: 'test@test.com', password: '123456'
       })
       expect(res.status).toBe(200)
@@ -208,34 +208,34 @@ describe('Auth Routes', () => {
     })
   })
 
-  // ========== /me ==========
-  describe('GET /me', () => {
+  // ========== /api/auth/me ==========
+  describe('GET /api/auth/me', () => {
     test('returns 401 when no authorization header', async () => {
-      const res = await simulateRequest(app, 'GET', '/me', null, {})
+      const res = await simulateRequest(app, 'GET', '/api/auth/me', null, {})
       expect(res.status).toBe(401)
     })
 
     test('returns 401 when token invalid', async () => {
       mockAuth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('Invalid token') })
-      const res = await simulateRequest(app, 'GET', '/me', null, { Cookie: 'session=invalid-token' }, [mockSessionMiddleware])
+      const res = await simulateRequest(app, 'GET', '/api/auth/me', null, { Cookie: 'session=invalid-token' }, [mockSessionMiddleware])
       expect(res.status).toBe(401)
     })
 
     test('returns user data when token valid', async () => {
       const mockUser = { id: '123', email: 'test@test.com' }
       mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
-      const res = await simulateRequest(app, 'GET', '/me', null, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      const res = await simulateRequest(app, 'GET', '/api/auth/me', null, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
       expect(res.status).toBe(200)
       expect(res.body.user.id).toBe('123')
       expect(res.body.user.email).toBe('test@test.com')
     })
   })
 
-  // ========== /logout ==========
-  describe('POST /logout', () => {
+  // ========== /api/auth/logout ==========
+  describe('POST /api/auth/logout', () => {
     test('always returns 200 (client clears local state)', async () => {
       mockAuth.signOut.mockResolvedValue({ error: null })
-      const res = await simulateRequest(app, 'POST', '/logout', null, { Cookie: 'session=some-token' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/logout', null, { Cookie: 'session=some-token' })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
     })
