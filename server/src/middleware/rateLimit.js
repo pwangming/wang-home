@@ -8,8 +8,27 @@ function createRateLimiter(options = {}) {
     keyGenerator = (ctx) => ctx.ip || 'unknown'
   } = options
 
-  // Create a new store for each limiter instance
   const store = new Map()
+  const CLEANUP_INTERVAL = 5 * 60 * 1000 // 5 minutes
+
+  // Periodic cleanup of expired entries
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now()
+    const windowStart = now - windowMs
+    for (const [key, requests] of store) {
+      const valid = requests.filter(time => time > windowStart)
+      if (valid.length === 0) {
+        store.delete(key)
+      } else {
+        store.set(key, valid)
+      }
+    }
+  }, CLEANUP_INTERVAL)
+
+  // Allow garbage collection if the process doesn't need the timer
+  if (cleanupTimer.unref) {
+    cleanupTimer.unref()
+  }
 
   return async function rateLimitMiddleware(ctx, next) {
     const now = Date.now()
@@ -38,7 +57,7 @@ function createRateLimiter(options = {}) {
 
 export function createLoginRateLimiter() {
   return createRateLimiter({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000,
     maxRequests: 5,
     keyGenerator: (ctx) => `login:${ctx.ip}`
   })
@@ -46,7 +65,7 @@ export function createLoginRateLimiter() {
 
 export function createRegisterRateLimiter() {
   return createRateLimiter({
-    windowMs: 60 * 60 * 1000, // 1 hour
+    windowMs: 60 * 60 * 1000,
     maxRequests: 3,
     keyGenerator: (ctx) => `register:${ctx.ip}`
   })
@@ -54,7 +73,7 @@ export function createRegisterRateLimiter() {
 
 export function createGameSessionRateLimiter() {
   return createRateLimiter({
-    windowMs: 60 * 1000, // 1 minute
+    windowMs: 60 * 1000,
     maxRequests: 10,
     keyGenerator: (ctx) => `game-session:${ctx.state.user?.id || ctx.ip}`
   })
@@ -62,7 +81,7 @@ export function createGameSessionRateLimiter() {
 
 export function createLeaderboardRateLimiter() {
   return createRateLimiter({
-    windowMs: 60 * 1000, // 1 minute
+    windowMs: 60 * 1000,
     maxRequests: 10,
     keyGenerator: (ctx) => `leaderboard:${ctx.state.user?.id || ctx.ip}`
   })
