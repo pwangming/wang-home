@@ -18,6 +18,10 @@ function normalizeToKoaApp(appOrRouter, middleware = []) {
 async function simulateRequest(appOrRouter, method, path, body = null, headers = {}, middleware = []) {
   const app = normalizeToKoaApp(appOrRouter, middleware)
   let req = request(app.callback())[method.toLowerCase()](path)
+  // Add default Origin header for write methods so CSRF middleware passes in tests
+  if (['post', 'put', 'patch', 'delete'].includes(method.toLowerCase())) {
+    req = req.set('Origin', 'http://localhost:3000')
+  }
   for (const [key, value] of Object.entries(headers)) {
     req = req.set(key, value)
   }
