@@ -133,10 +133,11 @@ import { NButton, NModal, useMessage } from 'naive-ui'
 import SnakeGame from '../components/game/SnakeGame.vue'
 import GameSidebar from '../components/game/GameSidebar.vue'
 import LeaderboardModal from '../components/game/LeaderboardModal.vue'
-import { authStore } from '../stores/auth.js'
+import { useAuthStore } from '../stores/auth.js'
 import { api } from '../lib/api.js'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const message = useMessage()
 
 const isPlaying = ref(false)
