@@ -2,7 +2,7 @@ import 'dotenv/config'
 import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 import session from 'koa-session'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from './lib/supabase.js'
 import createAuthRouter from './routes/auth.js'
 import createLeaderboardRouter from './routes/leaderboard.js'
 
@@ -19,9 +19,6 @@ if (process.env.NODE_ENV === 'production' && (!process.env.SUPABASE_URL || !proc
   console.error('FATAL: SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required in production')
   process.exit(1)
 }
-
-// Create Supabase client for the app
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
 
 // Session configuration
 const sessConfig = {

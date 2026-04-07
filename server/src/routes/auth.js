@@ -1,17 +1,11 @@
 import Router from 'koa-router'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase.js'
 import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
 import { createLoginRateLimiter, createRegisterRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
-
 function createAuthRouter() {
   const router = new Router({ prefix: '/api/auth' })
-
-  // Create a supabase client for this router
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
   // Helper to normalize username
   function normalizeUsername(username) {

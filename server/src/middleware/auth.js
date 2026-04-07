@@ -1,17 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabase, createUserScopedClient } from '../lib/supabase.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-export function createUserScopedClient(token) {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  })
-}
+export { createUserScopedClient }
 
 export async function authMiddleware(ctx, next) {
   const token = ctx.session?.supabaseAccessToken

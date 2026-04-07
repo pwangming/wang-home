@@ -1,11 +1,8 @@
 import Router from 'koa-router'
-import { createClient } from '@supabase/supabase-js'
-import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
+import { supabase, createUserScopedClient } from '../lib/supabase.js'
+import { authMiddleware } from '../middleware/auth.js'
 import { createLeaderboardRateLimiter, createGameSessionRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
-
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
 
 function createLeaderboardRouter() {
   const router = new Router({ prefix: '/api' })
@@ -19,20 +16,6 @@ function createLeaderboardRouter() {
     1.2: 1.5,
     1.5: 2.0,
     2.0: 3.0
-  }
-
-  // Helper to create Supabase client
-  function getSupabase() {
-    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  }
-
-  // Helper to create user-scoped client
-  function getUserScopedClient(token) {
-    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    })
   }
 
   // Auth helper - checks ctx.state.user OR ctx.session OR cookie header
@@ -62,7 +45,6 @@ function createLeaderboardRouter() {
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
 
-    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('leaderboard_best')
       .select('user_id, username, avatar_url, best_score, best_score_at')
@@ -104,7 +86,7 @@ function createLeaderboardRouter() {
       return
     }
 
-    const userScopedClient = getUserScopedClient(auth.token)
+    const userScopedClient = createUserScopedClient(auth.token)
 
     // Get user's best score
     const { data, error } = await userScopedClient
@@ -197,7 +179,7 @@ function createLeaderboardRouter() {
         return
       }
 
-      const userScopedClient = getUserScopedClient(auth.token)
+      const userScopedClient = createUserScopedClient(auth.token)
 
       // If sessionId is provided, this is the second phase (completing a session)
       if (sessionId) {
