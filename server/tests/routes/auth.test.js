@@ -123,7 +123,7 @@ describe('Auth Routes', () => {
       })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
-      expect(res.body.user.id).toBe('123')
+      expect(res.body.data.user.id).toBe('123')
       expect(mockFrom).toHaveBeenCalledWith('profiles')
     })
 
@@ -159,7 +159,7 @@ describe('Auth Routes', () => {
       })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
-      expect(res.body.needsEmailConfirmation).toBe(true)
+      expect(res.body.data.needsEmailConfirmation).toBe(true)
     })
   })
 
@@ -208,7 +208,7 @@ describe('Auth Routes', () => {
       })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
-      expect(res.body.user.email).toBe('test@test.com')
+      expect(res.body.data.user.email).toBe('test@test.com')
     })
   })
 
@@ -230,8 +230,8 @@ describe('Auth Routes', () => {
       mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
       const res = await simulateRequest(app, 'GET', '/api/auth/me', null, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
       expect(res.status).toBe(200)
-      expect(res.body.user.id).toBe('123')
-      expect(res.body.user.email).toBe('test@test.com')
+      expect(res.body.data.user.id).toBe('123')
+      expect(res.body.data.user.email).toBe('test@test.com')
     })
   })
 

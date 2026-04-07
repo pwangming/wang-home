@@ -11,10 +11,10 @@ async function request(path, options = {}) {
     headers,
     credentials: 'include'
   })
-  const data = await res.json()
+  const json = await res.json()
 
-  if (!res.ok) throw new Error(data.error || 'Request failed')
-  return data
+  if (!res.ok) throw new Error(json.error || 'Request failed')
+  return json.data !== undefined ? json.data : json
 }
 
 export const api = {

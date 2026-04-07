@@ -103,7 +103,7 @@ describe('Leaderboard Routes', () => {
       app = leaderboardRouter()
       const res = await simulateRequest(app, 'GET', '/api/leaderboard?page=1&pageSize=20')
       expect(res.status).toBe(200)
-      expect(res.body.leaderboard).toEqual(mockData)
+      expect(res.body.data.leaderboard).toEqual(mockData)
     })
 
     test('returns empty array when no scores', async () => {
@@ -116,7 +116,7 @@ describe('Leaderboard Routes', () => {
       app = leaderboardRouter()
       const res = await simulateRequest(app, 'GET', '/api/leaderboard?page=1&pageSize=20')
       expect(res.status).toBe(200)
-      expect(res.body.leaderboard).toEqual([])
+      expect(res.body.data.leaderboard).toEqual([])
     })
   })
 
@@ -140,7 +140,7 @@ describe('Leaderboard Routes', () => {
         Cookie: 'session=valid-token'
       }, [mockAuthMiddleware])
       expect(res.status).toBe(200)
-      expect(res.body.rank).toBeNull()
+      expect(res.body.data.rank).toBeNull()
     })
 
     test('returns rank when user has score', async () => {
@@ -181,7 +181,7 @@ describe('Leaderboard Routes', () => {
         Cookie: 'session=valid-token'
       }, [mockAuthMiddleware])
       expect(res.status).toBe(200)
-      expect(res.body.rank).toEqual({ ...mockRankData, rank: 1 })
+      expect(res.body.data.rank).toEqual({ ...mockRankData, rank: 1 })
     })
   })
 

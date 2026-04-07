@@ -3,6 +3,7 @@ import { supabase, createUserScopedClient } from '../lib/supabase.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { createLeaderboardRateLimiter, createGameSessionRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
+import { ok, fail } from '../lib/response.js'
 
 function createLeaderboardRouter() {
   const router = new Router({ prefix: '/api' })
@@ -54,16 +55,11 @@ function createLeaderboardRouter() {
       .range(from, to)
 
     if (error) {
-      ctx.status = 500
-      ctx.body = { error: 'Failed to fetch leaderboard' }
+      fail(ctx, 500, 'Failed to fetch leaderboard')
       return
     }
 
-    ctx.body = {
-      leaderboard: data || [],
-      page,
-      pageSize
-    }
+    ok(ctx, { leaderboard: data || [] }, { page, pageSize })
   })
 
   // GET /leaderboard/rank/me - current user's rank
@@ -71,8 +67,7 @@ function createLeaderboardRouter() {
     // Check auth - either from middleware or session
     const auth = getAuthUser(ctx)
     if (!auth || !auth.token) {
-      ctx.status = 401
-      ctx.body = { error: 'Unauthorized' }
+      fail(ctx, 401, 'Unauthorized')
       return
     }
 
@@ -81,8 +76,7 @@ function createLeaderboardRouter() {
     if (!userId) {
       // In test scenarios without middleware, use test user ID
       // In production, middleware would have set ctx.state.user
-      ctx.status = 401
-      ctx.body = { error: 'Unauthorized' }
+      fail(ctx, 401, 'Unauthorized')
       return
     }
 
@@ -96,13 +90,12 @@ function createLeaderboardRouter() {
       .maybeSingle()
 
     if (error) {
-      ctx.status = 500
-      ctx.body = { error: 'Failed to fetch rank' }
+      fail(ctx, 500, 'Failed to fetch rank')
       return
     }
 
     if (!data) {
-      ctx.body = { rank: null }
+      ok(ctx, { rank: null })
       return
     }
 
@@ -114,12 +107,7 @@ function createLeaderboardRouter() {
 
     const rank = (count || 0) + 1
 
-    ctx.body = {
-      rank: {
-        ...data,
-        rank
-      }
-    }
+    ok(ctx, { rank: { ...data, rank } })
   })
 
   // POST /leaderboard - submit score
@@ -130,8 +118,7 @@ function createLeaderboardRouter() {
       // Check auth
       const auth = getAuthUser(ctx)
       if (!auth || !auth.token) {
-        ctx.status = 401
-        ctx.body = { error: '未登录，无法保存分数' }
+        fail(ctx, 401, '未登录，无法保存分数')
         return
       }
 
@@ -139,8 +126,7 @@ function createLeaderboardRouter() {
       let userId = ctx.state?.user?.id
       if (!userId) {
         // In test scenarios without middleware, refuse the request
-        ctx.status = 401
-        ctx.body = { error: 'Unauthorized' }
+        fail(ctx, 401, 'Unauthorized')
         return
       }
 
@@ -148,34 +134,29 @@ function createLeaderboardRouter() {
 
       // Validation
       if (score === undefined || speedMultiplier === undefined || scoreMultiplier === undefined) {
-        ctx.status = 400
-        ctx.body = { error: 'score, speedMultiplier and scoreMultiplier are required' }
+        fail(ctx, 400, 'score, speedMultiplier and scoreMultiplier are required')
         return
       }
 
       if (typeof score !== 'number' || score < 0 || !Number.isInteger(score)) {
-        ctx.status = 400
-        ctx.body = { error: 'score must be a non-negative integer' }
+        fail(ctx, 400, 'score must be a non-negative integer')
         return
       }
 
       if (typeof speedMultiplier !== 'number' || speedMultiplier <= 0) {
-        ctx.status = 400
-        ctx.body = { error: 'speedMultiplier must be a positive number' }
+        fail(ctx, 400, 'speedMultiplier must be a positive number')
         return
       }
 
       if (!VALID_SPEED_MULTIPLIERS.includes(speedMultiplier)) {
-        ctx.status = 400
-        ctx.body = { error: 'speedMultiplier must be one of: 1.0, 1.2, 1.5, 2.0' }
+        fail(ctx, 400, 'speedMultiplier must be one of: 1.0, 1.2, 1.5, 2.0')
         return
       }
 
       // Verify score multiplier matches speed multiplier
       const expectedScoreMultiplier = SCORE_MULTIPLIER_MAP[speedMultiplier]
       if (Math.abs(scoreMultiplier - expectedScoreMultiplier) > 0.01) {
-        ctx.status = 400
-        ctx.body = { error: 'scoreMultiplier does not match speedMultiplier mapping' }
+        fail(ctx, 400, 'scoreMultiplier does not match speedMultiplier mapping')
         return
       }
 
@@ -192,22 +173,19 @@ function createLeaderboardRouter() {
           .maybeSingle()
 
         if (sessionError || !session) {
-          ctx.status = 400
-          ctx.body = { error: 'Invalid or expired game session' }
+          fail(ctx, 400, 'Invalid or expired game session')
           return
         }
 
         if (session.is_verified) {
-          ctx.status = 409
-          ctx.body = { error: 'Score already submitted for this session' }
+          fail(ctx, 409, 'Score already submitted for this session')
           return
         }
 
         // Validate duration if provided
         if (durationMs !== undefined) {
           if (durationMs < 1000 || durationMs > 600000) {
-            ctx.status = 400
-            ctx.body = { error: 'durationMs must be between 1000 and 600000' }
+            fail(ctx, 400, 'durationMs must be between 1000 and 600000')
             return
           }
         }
@@ -225,12 +203,11 @@ function createLeaderboardRouter() {
           .eq('user_id', userId)
 
         if (updateError) {
-          ctx.status = 500
-          ctx.body = { error: 'Failed to submit score' }
+          fail(ctx, 500, 'Failed to submit score')
           return
         }
 
-        ctx.body = { success: true }
+        ok(ctx)
         return
       }
 
@@ -239,8 +216,7 @@ function createLeaderboardRouter() {
       const maxReasonableScore = 6000
 
       if (score > maxReasonableScore) {
-        ctx.status = 400
-        ctx.body = { error: 'Score exceeds reasonable limit' }
+        fail(ctx, 400, 'Score exceeds reasonable limit')
         return
       }
 
@@ -257,12 +233,11 @@ function createLeaderboardRouter() {
         })
 
       if (insertError) {
-        ctx.status = 500
-        ctx.body = { error: 'Failed to submit score' }
+        fail(ctx, 500, 'Failed to submit score')
         return
       }
 
-      ctx.body = { success: true }
+      ok(ctx)
     }
   )
 

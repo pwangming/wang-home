@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
 import { createLoginRateLimiter, createRegisterRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
+import { ok, fail } from '../lib/response.js'
 
 function createAuthRouter() {
   const router = new Router({ prefix: '/api/auth' })
@@ -20,8 +21,7 @@ function createAuthRouter() {
       const { email, password, username } = ctx.request.body
 
       if (!email || !password || !username) {
-        ctx.status = 400
-        ctx.body = { error: 'email, password and username are required' }
+        fail(ctx, 400, 'email, password and username are required')
         return
       }
 
@@ -36,18 +36,14 @@ function createAuthRouter() {
       })
 
       if (error) {
-        ctx.status = 400
-        ctx.body = { error: error.message }
+        fail(ctx, 400, error.message)
         return
       }
 
       // Check if email confirmation is needed
       if (!data.session) {
         // Email confirmation required
-        ctx.body = {
-          success: true,
-          needsEmailConfirmation: true
-        }
+        ok(ctx, { needsEmailConfirmation: true })
         return
       }
 
@@ -60,8 +56,7 @@ function createAuthRouter() {
         .maybeSingle()
 
       if (profileError || !profile) {
-        ctx.status = 500
-        ctx.body = { error: 'Profile creation failed. Please try again.' }
+        fail(ctx, 500, 'Profile creation failed. Please try again.')
         return
       }
 
@@ -72,13 +67,7 @@ function createAuthRouter() {
         ctx.session.userId = data.user.id
       }
 
-      ctx.body = {
-        success: true,
-        user: {
-          id: data.user.id,
-          email: data.user.email
-        }
-      }
+      ok(ctx, { user: { id: data.user.id, email: data.user.email } })
     }
   )
 
@@ -90,8 +79,7 @@ function createAuthRouter() {
       const { email, password } = ctx.request.body
 
       if (!email || !password) {
-        ctx.status = 400
-        ctx.body = { error: 'email and password are required' }
+        fail(ctx, 400, 'email and password are required')
         return
       }
 
@@ -101,8 +89,7 @@ function createAuthRouter() {
       })
 
       if (error) {
-        ctx.status = 401
-        ctx.body = { error: error.message }
+        fail(ctx, 401, error.message)
         return
       }
 
@@ -113,21 +100,13 @@ function createAuthRouter() {
         ctx.session.userId = data.user.id
       }
 
-      ctx.body = {
-        success: true,
-        user: {
-          id: data.user.id,
-          email: data.user.email
-        }
-      }
+      ok(ctx, { user: { id: data.user.id, email: data.user.email } })
     }
   )
 
   // GET /me
   router.get('/me', authMiddleware, async (ctx) => {
-    ctx.body = {
-      user: ctx.state.user
-    }
+    ok(ctx, { user: ctx.state.user })
   })
 
   // POST /logout
@@ -144,7 +123,7 @@ function createAuthRouter() {
       }
     }
 
-    ctx.body = { success: true }
+    ok(ctx)
   })
 
   return router
