@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
 
 // Mock api before importing store
 vi.mock('../../src/lib/api.js', () => ({
@@ -13,10 +14,14 @@ vi.mock('../../src/lib/api.js', () => ({
 }))
 
 // Import store after mock
-const { authStore } = await import('../../src/stores/auth.js')
+const { useAuthStore } = await import('../../src/stores/auth.js')
 
 describe('auth Store', () => {
+  let authStore
+
   beforeEach(() => {
+    setActivePinia(createPinia())
+    authStore = useAuthStore()
     authStore.user = null
     authStore.isLoading = false
   })
