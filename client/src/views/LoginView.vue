@@ -98,7 +98,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { NForm, NAlert } from 'naive-ui'
+import { NForm, NAlert, useMessage } from 'naive-ui'
 import NeonCard from '../components/ui/NeonCard.vue'
 import NeonButton from '../components/ui/NeonButton.vue'
 import NeonInput from '../components/ui/NeonInput.vue'
@@ -106,6 +106,7 @@ import NeonCheckbox from '../components/ui/NeonCheckbox.vue'
 import { useAuthStore } from '../stores/auth.js'
 
 const router = useRouter()
+const message = useMessage()
 const authStore = useAuthStore()
 
 const isSubmitting = ref(false)
@@ -159,7 +160,7 @@ async function handleSubmit() {
 }
 
 function handleGoogleLogin() {
-  console.log('Google login not implemented')
+  message.info('Google 登录即将上线，敬请期待')
 }
 </script>
 

@@ -110,6 +110,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useMessage } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import NeonCard from '../components/ui/NeonCard.vue'
 import NeonButton from '../components/ui/NeonButton.vue'
@@ -118,6 +119,7 @@ import { useAuthStore } from '../stores/auth.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const message = useMessage()
 
 const isSubmitting = ref(false)
 const errorMessage = ref('')
@@ -188,7 +190,7 @@ async function handleSubmit() {
 }
 
 function handleGoogleRegister() {
-  console.log('Google register not implemented')
+  message.info('Google 注册即将上线，敬请期待')
 }
 
 </script>
