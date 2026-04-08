@@ -1,11 +1,17 @@
 <template>
-  <div class="snake-game">
-    <canvas ref="canvasRef" :width="canvasWidth" :height="canvasHeight" @keydown="handleKeyDown" tabindex="0"></canvas>
+  <div ref="containerRef" class="snake-game">
+    <canvas
+      ref="canvasRef"
+      :width="canvasSize"
+      :height="canvasSize"
+      @keydown="handleKeyDown"
+      tabindex="0"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 const props = defineProps({
   speedMultiplier: {
@@ -22,9 +28,18 @@ const emit = defineEmits(['gameOver'])
 
 // Canvas setup
 const canvasRef = ref(null)
-const canvasWidth = 400
-const canvasHeight = 400
+const containerRef = ref(null)
+const canvasSize = ref(400)
 const gridSize = 20
+let resizeObserver = null
+
+function updateCanvasSize() {
+  if (!containerRef.value) return
+  const rect = containerRef.value.getBoundingClientRect()
+  const size = Math.min(rect.width, rect.height)
+  // Snap to grid for clean rendering
+  canvasSize.value = Math.floor(size / gridSize) * gridSize || 400
+}
 
 // Game state
 const snake = ref([])
@@ -52,8 +67,8 @@ const opposites = {
 
 // Initialize game
 function initGame() {
-  const startX = Math.floor(canvasWidth / gridSize / 2) * gridSize
-  const startY = Math.floor(canvasHeight / gridSize / 2) * gridSize
+  const startX = Math.floor(canvasSize.value / gridSize / 2) * gridSize
+  const startY = Math.floor(canvasSize.value / gridSize / 2) * gridSize
   snake.value = [
     { x: startX, y: startY },
     { x: startX - gridSize, y: startY },
@@ -66,13 +81,12 @@ function initGame() {
 
 // Place food at random position
 function placeFood() {
-  const maxX = Math.floor(canvasWidth / gridSize)
-  const maxY = Math.floor(canvasHeight / gridSize)
+  const maxCells = Math.floor(canvasSize.value / gridSize)
   let newFood
   do {
     newFood = {
-      x: Math.floor(Math.random() * maxX) * gridSize,
-      y: Math.floor(Math.random() * maxY) * gridSize
+      x: Math.floor(Math.random() * maxCells) * gridSize,
+      y: Math.floor(Math.random() * maxCells) * gridSize
     }
   } while (snake.value.some(segment => segment.x === newFood.x && segment.y === newFood.y))
   food.value = newFood
@@ -84,23 +98,25 @@ function draw() {
   if (!canvas) return
   const ctx = canvas.getContext('2d')
 
+  const size = canvasSize.value
+
   // Clear canvas
   ctx.fillStyle = '#1a1a2e'
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+  ctx.fillRect(0, 0, size, size)
 
   // Draw grid (subtle)
   ctx.strokeStyle = '#2a2a4e'
   ctx.lineWidth = 0.5
-  for (let x = 0; x <= canvasWidth; x += gridSize) {
+  for (let x = 0; x <= size; x += gridSize) {
     ctx.beginPath()
     ctx.moveTo(x, 0)
-    ctx.lineTo(x, canvasHeight)
+    ctx.lineTo(x, size)
     ctx.stroke()
   }
-  for (let y = 0; y <= canvasHeight; y += gridSize) {
+  for (let y = 0; y <= size; y += gridSize) {
     ctx.beginPath()
     ctx.moveTo(0, y)
-    ctx.lineTo(canvasWidth, y)
+    ctx.lineTo(size, y)
     ctx.stroke()
   }
 
@@ -163,7 +179,7 @@ function tick() {
   }
 
   // Check wall collision
-  if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight) {
+  if (head.x < 0 || head.x >= canvasSize.value || head.y < 0 || head.y >= canvasSize.value) {
     handleGameOver()
     return
   }
@@ -266,7 +282,17 @@ watch(() => props.speedMultiplier, () => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
+  updateCanvasSize()
+
+  resizeObserver = new ResizeObserver(() => {
+    updateCanvasSize()
+  })
+  if (containerRef.value) {
+    resizeObserver.observe(containerRef.value)
+  }
+
   if (canvasRef.value) {
     canvasRef.value.focus()
   }
@@ -275,6 +301,10 @@ onMounted(() => {
 onUnmounted(() => {
   if (gameLoopId.value) {
     clearInterval(gameLoopId.value)
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
   }
 })
 </script>
