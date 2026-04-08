@@ -26,24 +26,7 @@
                   <p v-if="!authStore.user">当前未登录，游玩成绩不会计入排行榜</p>
                 </div>
 
-                <div class="speed-selection">
-                  <div class="selection-label">选择速度倍率</div>
-                  <div class="speed-buttons">
-                    <button
-                      v-for="speed in speedOptions"
-                      :key="speed.value"
-                      class="speed-btn"
-                      :data-testid="`speed-option-${speed.value}`"
-                      :class="{ active: selectedSpeed === speed.value }"
-                      @click="selectedSpeed = speed.value"
-                    >
-                      {{ speed.label }}
-                    </button>
-                  </div>
-                  <div class="score-hint">
-                    得分倍率: {{ currentScoreMultiplier }}x
-                  </div>
-                </div>
+                <SpeedSelector v-model="selectedSpeed" />
 
                 <button data-testid="game-start-btn" class="start-btn" @click="startGame">
                   <span class="start-btn__icon">▶</span>
@@ -54,24 +37,7 @@
                 <h2>游戏结束</h2>
                 <div class="final-score">最终得分：{{ lastGameScore.toLocaleString() }}</div>
 
-                <div class="speed-selection">
-                  <div class="selection-label">选择速度倍率</div>
-                  <div class="speed-buttons">
-                    <button
-                      v-for="speed in speedOptions"
-                      :key="speed.value"
-                      class="speed-btn"
-                      :data-testid="`speed-option-${speed.value}`"
-                      :class="{ active: selectedSpeed === speed.value }"
-                      @click="selectedSpeed = speed.value"
-                    >
-                      {{ speed.label }}
-                    </button>
-                  </div>
-                  <div class="score-hint">
-                    得分倍率: {{ currentScoreMultiplier }}x
-                  </div>
-                </div>
+                <SpeedSelector v-model="selectedSpeed" />
 
                 <button data-testid="game-retry-btn" class="start-btn" @click="playAgain">
                   <span class="start-btn__icon">▶</span>
@@ -127,12 +93,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NModal, useMessage } from 'naive-ui'
 import SnakeGame from '../components/game/SnakeGame.vue'
 import GameSidebar from '../components/game/GameSidebar.vue'
 import LeaderboardModal from '../components/game/LeaderboardModal.vue'
+import SpeedSelector from '../components/game/SpeedSelector.vue'
 import { useAuthStore } from '../stores/auth.js'
 import { api } from '../lib/api.js'
 
@@ -151,22 +118,12 @@ const hasSeenGuestWarning = ref(false)
 const submitStatus = ref('')
 const submitMessage = ref('')
 
-let gameStartTimer = null
 let submitStatusTimer = null
 let previousBodyOverflow = ''
 let previousHtmlOverflow = ''
 
-const speedOptions = [
-  { value: 1.0, label: '1.0x', scoreMult: 1.0 },
-  { value: 1.2, label: '1.2x', scoreMult: 1.5 },
-  { value: 1.5, label: '1.5x', scoreMult: 2.0 },
-  { value: 2.0, label: '2.0x', scoreMult: 3.0 }
-]
-
-const currentScoreMultiplier = computed(() => {
-  const option = speedOptions.find(o => o.value === selectedSpeed.value)
-  return option?.scoreMult || 1.0
-})
+const SPEED_SCORE_MAP = { 1.0: 1.0, 1.2: 1.5, 1.5: 2.0, 2.0: 3.0 }
+const currentScoreMultiplier = computed(() => SPEED_SCORE_MAP[selectedSpeed.value] || 1.0)
 
 function checkGuestWarning() {
   if (!authStore.user && !hasSeenGuestWarning.value) {
@@ -203,9 +160,8 @@ async function startGame() {
   }
   isPlaying.value = true
   currentScore.value = 0
-  gameStartTimer = setTimeout(() => {
-    snakeGameRef.value?.startGame()
-  }, 100)
+  await nextTick()
+  snakeGameRef.value?.startGame()
 }
 
 async function handleGameOver(finalScore, speedMult, scoreMult) {
@@ -263,10 +219,6 @@ onBeforeUnmount(() => {
   htmlEl.style.overflow = previousHtmlOverflow
   bodyEl.style.overflow = previousBodyOverflow
 
-  if (gameStartTimer) {
-    clearTimeout(gameStartTimer)
-    gameStartTimer = null
-  }
   if (submitStatusTimer) {
     clearTimeout(submitStatusTimer)
     submitStatusTimer = null
@@ -446,47 +398,6 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   font-size: clamp(12px, 1vw, 15px);
   margin: 0 0 clamp(16px, 2vh, 28px);
-}
-
-.speed-selection {
-  margin-bottom: clamp(16px, 2vh, 28px);
-}
-
-.selection-label {
-  color: var(--text-secondary);
-  font-size: clamp(12px, 0.9vw, 14px);
-  margin-bottom: clamp(8px, 1vh, 14px);
-}
-
-.speed-buttons {
-  display: flex;
-  gap: clamp(8px, 1vw, 16px);
-  justify-content: center;
-  margin-bottom: clamp(8px, 1vh, 14px);
-  flex-wrap: wrap;
-}
-
-.speed-btn {
-  padding: clamp(10px, 1vw, 14px) clamp(16px, 1.5vw, 24px);
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: clamp(13px, 1vw, 16px);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.speed-btn.active,
-.speed-btn:hover {
-  background: var(--neon-green);
-  color: #000;
-  border-color: var(--neon-green);
-}
-
-.score-hint {
-  color: var(--neon-green);
-  font-size: clamp(11px, 0.85vw, 14px);
 }
 
 .start-btn {
