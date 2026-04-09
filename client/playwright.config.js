@@ -7,12 +7,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   testDir: './tests/e2e',
   use: {
-    baseURL: 'http://localhost:3000'
+    baseURL: 'http://localhost:3003'
   },
   webServer: [
     {
-      command: 'npm run dev -- --host localhost --port 3000',
-      port: 3000,
+      command: 'npm run dev',
+      port: 3003,
       reuseExistingServer: true,
       timeout: 120000,
       cwd: __dirname

@@ -63,19 +63,15 @@ function createLeaderboardRouter() {
   })
 
   // GET /leaderboard/rank/me - current user's rank
-  router.get('/leaderboard/rank/me', async (ctx) => {
-    // Check auth - either from middleware or session
+  router.get('/leaderboard/rank/me', authMiddleware, async (ctx) => {
     const auth = getAuthUser(ctx)
     if (!auth || !auth.token) {
       fail(ctx, 401, 'Unauthorized')
       return
     }
 
-    // If middleware set the user, use that. Otherwise use a direct query.
     let userId = ctx.state?.user?.id
     if (!userId) {
-      // In test scenarios without middleware, use test user ID
-      // In production, middleware would have set ctx.state.user
       fail(ctx, 401, 'Unauthorized')
       return
     }
@@ -114,21 +110,10 @@ function createLeaderboardRouter() {
   router.post('/leaderboard',
     createCsrfMiddleware(),
     createLeaderboardRateLimiter(),
+    authMiddleware,
     async (ctx) => {
-      // Check auth
       const auth = getAuthUser(ctx)
-      if (!auth || !auth.token) {
-        fail(ctx, 401, '未登录，无法保存分数')
-        return
-      }
-
-      // Get user ID - must be set by middleware in production
-      let userId = ctx.state?.user?.id
-      if (!userId) {
-        // In test scenarios without middleware, refuse the request
-        fail(ctx, 401, 'Unauthorized')
-        return
-      }
+      const userId = ctx.state.user.id
 
       const { sessionId, score, speedMultiplier, scoreMultiplier, endedAt, durationMs } = ctx.request.body
 

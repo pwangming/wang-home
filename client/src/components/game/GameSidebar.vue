@@ -97,10 +97,10 @@ const latestAchievement = computed(() => {
   --key-size: clamp(36px, 3vw, 52px);
 
   width: var(--sidebar-width);
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  flex-shrink: 1;
   overflow: hidden;
 }
 
@@ -246,6 +246,7 @@ const latestAchievement = computed(() => {
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
   padding: var(--section-padding);
+  flex: 1;
 }
 
 .controls-label {

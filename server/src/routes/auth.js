@@ -106,7 +106,14 @@ function createAuthRouter() {
 
   // GET /me
   router.get('/me', authMiddleware, async (ctx) => {
-    ok(ctx, { user: ctx.state.user })
+    const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
+    const { data: profile } = await userScopedClient
+      .from('profiles')
+      .select('username')
+      .eq('id', ctx.state.user.id)
+      .maybeSingle()
+
+    ok(ctx, { user: { ...ctx.state.user, username: profile?.username || null } })
   })
 
   // POST /logout

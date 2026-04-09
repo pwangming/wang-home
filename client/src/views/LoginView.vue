@@ -3,7 +3,6 @@
     <!-- 装饰元素 -->
     <div class="login-decor login-decor--tl" />
     <div class="login-decor login-decor--br" />
-    <div class="login-decor login-decor--tr" />
 
     <div class="login-container">
       <!-- 左侧品牌区 -->
@@ -14,10 +13,10 @@
           欢迎回到充满活力的竞技场。体验最流畅的操作手感，挑战全球积分榜，开启你的霓虹贪吃蛇之旅。
         </p>
         <div class="login-brand__avatars">
+          <span class="login-brand__avatars-text">+666 玩家在线</span>
           <img src="/avatars/1.png" alt="" class="avatar" />
           <img src="/avatars/2.png" alt="" class="avatar" />
           <img src="/avatars/3.png" alt="" class="avatar" />
-          <span class="login-brand__avatars-text">+666 玩家在线</span>
         </div>
       </div>
 
@@ -27,7 +26,7 @@
 
         <n-form :model="form" @submit.prevent="handleSubmit">
           <div class="form-field">
-            <label class="form-label">用户名或邮箱</label>
+            <label class="form-label">邮箱</label>
             <NeonInput
               data-testid="login-email"
               v-model="form.email"
@@ -286,7 +285,7 @@ function handleGoogleLogin() {
 .login-brand__avatars-text {
   color: var(--text-secondary);
   font-size: clamp(11px, 0.9vw, 14px);
-  margin-left: clamp(8px, 1vw, 16px);
+  margin-right: clamp(8px, 1vw, 16px);
 }
 
 /* 登录卡片 */

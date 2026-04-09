@@ -198,7 +198,7 @@ function handleGoogleRegister() {
 <style scoped>
 /* === 1920x1080 Baseline === */
 .register-page {
-  --page-padding: clamp(16px, 2vw, 40px);
+  --page-padding: clamp(16px, 2vw, 32px);
   --card-width: clamp(360px, 35vw, 520px);
   --input-height: clamp(44px, 4vh, 56px);
   --btn-height: clamp(44px, 5vh, 56px);
@@ -275,6 +275,7 @@ function handleGoogleRegister() {
 }
 
 .register-float-card {
+  display: none;
   position: absolute;
   bottom: calc(clamp(80px, 10vh, 140px) + clamp(62px, 8vh, 100px));
   left: clamp(40px, 5vw, 100px);

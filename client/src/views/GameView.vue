@@ -2,13 +2,15 @@
   <div class="game-page">
     <!-- 顶部导航 -->
     <header class="game-topbar">
-      <div class="game-topbar__logo">霓虹贪吃蛇</div>
-      <div class="game-topbar__actions">
-        <button class="topbar-btn">🔔</button>
-        <button class="topbar-btn">⚙️</button>
-        <div class="topbar-avatar">
-          <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" alt="" />
-          <span v-else>👤</span>
+      <div class="game-topbar__inner">
+        <div class="game-topbar__logo">霓虹贪吃蛇</div>
+        <div class="game-topbar__actions">
+          <button class="topbar-btn">🔔</button>
+          <button class="topbar-btn">⚙️</button>
+          <button v-if="!authStore.user" class="topbar-login-btn" @click="router.push('/login')">登录</button>
+          <div v-else class="topbar-user">
+            <span class="topbar-username">{{ authStore.user.username || authStore.user.email }}</span>
+          </div>
         </div>
       </div>
     </header>
@@ -191,8 +193,9 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
   }, 3000)
 }
 
-function playAgain() {
+async function playAgain() {
   lastGameScore.value = null
+  await startGame()
 }
 
 onMounted(async () => {
@@ -260,15 +263,21 @@ onBeforeUnmount(() => {
 
 /* 顶部导航 */
 .game-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 0 var(--main-padding);
   height: var(--topbar-height);
   background: rgba(26, 26, 46, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--card-border);
   flex-shrink: 0;
+}
+
+.game-topbar__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  max-width: calc(var(--board-size) + var(--main-padding) + var(--sidebar-width));
+  margin: 0 auto;
 }
 
 .game-topbar__logo {
@@ -299,17 +308,37 @@ onBeforeUnmount(() => {
   background: var(--card-border);
 }
 
-.topbar-avatar {
-  width: clamp(36px, 3.5vw, 44px);
-  height: clamp(36px, 3.5vw, 44px);
-  background: var(--input-bg);
-  border: 2px solid var(--neon-green);
-  border-radius: 50%;
+.topbar-login-btn {
+  height: clamp(32px, 3vw, 40px);
+  padding: 0 clamp(12px, 1.2vw, 18px);
+  background: transparent;
+  border: 1px solid var(--neon-green);
+  border-radius: 999px;
+  color: var(--neon-green);
+  font-size: clamp(12px, 0.9vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topbar-login-btn:hover {
+  background: var(--neon-green);
+  color: #000;
+  box-shadow: 0 0 12px var(--neon-green-glow);
+}
+
+.topbar-user {
   display: flex;
   align-items: center;
-  justify-content: center;
+}
+
+.topbar-username {
+  color: var(--text-primary);
+  font-size: clamp(12px, 0.9vw, 14px);
+  max-width: clamp(80px, 10vw, 160px);
   overflow: hidden;
-  font-size: clamp(16px, 1.5vw, 22px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 主要内容区 */
@@ -328,12 +357,14 @@ onBeforeUnmount(() => {
 .game-board-section {
   flex: 1;
   max-width: var(--board-size);
-  align-self: flex-start;
 }
 
 .game-sidebar-panel {
   align-self: flex-start;
-  margin-top: 0;
+  max-height: calc(var(--board-size) + var(--board-wrapper-padding) * 2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-board-wrapper {
@@ -426,7 +457,7 @@ onBeforeUnmount(() => {
 /* 反馈消息 */
 .submit-feedback {
   position: fixed;
-  bottom: clamp(16px, 2vh, 28px);
+  top: clamp(80px, 10vh, 120px);
   left: 50%;
   transform: translateX(-50%);
   padding: clamp(10px, 1.2vh, 16px) clamp(20px, 2vw, 32px);
@@ -510,7 +541,8 @@ onBeforeUnmount(() => {
     font-size: 13px;
   }
 
-  .topbar-avatar {
+  .topbar-login-btn,
+  .topbar-user {
     display: none;
   }
 }
