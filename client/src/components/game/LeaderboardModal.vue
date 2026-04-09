@@ -121,8 +121,7 @@ async function fetchLeaderboard() {
 
     entries.value = normalizeLeaderboardRows(listData?.leaderboard || [])
     myRank.value = normalizeMyRankRow(myRankData?.rank || null)
-  } catch (err) {
-    console.error('Failed to fetch leaderboard:', err)
+  } catch {
     entries.value = []
     myRank.value = null
   }

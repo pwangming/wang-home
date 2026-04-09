@@ -38,5 +38,15 @@ supabase/config.local.toml
 # Playwright CLI (本地测试生成)
 .playwright-cli/
 
-# Claude Code superpowers
+# Claude Code
 .superpowers/
+.claude/
+
+# Test results (Playwright output)
+client/test-results/
+
+# Generated screenshots
+docs/screenshots/
+
+# Generated plans and specs
+docs/superpowers/

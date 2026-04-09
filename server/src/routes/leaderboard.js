@@ -1,7 +1,7 @@
 import Router from 'koa-router'
 import { supabase, createUserScopedClient } from '../lib/supabase.js'
 import { authMiddleware } from '../middleware/auth.js'
-import { createLeaderboardRateLimiter, createGameSessionRateLimiter } from '../middleware/rateLimit.js'
+import { createLeaderboardRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 import { ok, fail } from '../lib/response.js'
 
@@ -17,26 +17,6 @@ function createLeaderboardRouter() {
     1.2: 1.5,
     1.5: 2.0,
     2.0: 3.0
-  }
-
-  // Auth helper - checks ctx.state.user OR ctx.session OR cookie header
-  function getAuthUser(ctx) {
-    // First check if user is already set by middleware
-    if (ctx.state?.user) {
-      return { id: ctx.state.user.id, token: ctx.session?.supabaseAccessToken }
-    }
-    // Fall back to session token
-    const token = ctx.session?.supabaseAccessToken
-    if (token) {
-      return { id: null, token }
-    }
-    // Fall back to cookie header (for testing without session middleware)
-    const cookieHeader = ctx.headers?.cookie || ''
-    const match = cookieHeader.match(/session=([^;]+)/)
-    if (match) {
-      return { id: null, token: match[1] }
-    }
-    return null
   }
 
   // GET /leaderboard - paginated ranking
@@ -64,19 +44,8 @@ function createLeaderboardRouter() {
 
   // GET /leaderboard/rank/me - current user's rank
   router.get('/leaderboard/rank/me', authMiddleware, async (ctx) => {
-    const auth = getAuthUser(ctx)
-    if (!auth || !auth.token) {
-      fail(ctx, 401, 'Unauthorized')
-      return
-    }
-
-    let userId = ctx.state?.user?.id
-    if (!userId) {
-      fail(ctx, 401, 'Unauthorized')
-      return
-    }
-
-    const userScopedClient = createUserScopedClient(auth.token)
+    const userId = ctx.state.user.id
+    const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
 
     // Get user's best score
     const { data, error } = await userScopedClient
@@ -112,8 +81,8 @@ function createLeaderboardRouter() {
     createLeaderboardRateLimiter(),
     authMiddleware,
     async (ctx) => {
-      const auth = getAuthUser(ctx)
       const userId = ctx.state.user.id
+      const accessToken = ctx.session.supabaseAccessToken
 
       const { sessionId, score, speedMultiplier, scoreMultiplier, endedAt, durationMs } = ctx.request.body
 
@@ -145,7 +114,7 @@ function createLeaderboardRouter() {
         return
       }
 
-      const userScopedClient = createUserScopedClient(auth.token)
+      const userScopedClient = createUserScopedClient(accessToken)
 
       // If sessionId is provided, this is the second phase (completing a session)
       if (sessionId) {

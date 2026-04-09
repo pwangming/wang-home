@@ -156,8 +156,8 @@ async function startGame() {
   if (authStore.user) {
     try {
       await api.leaderboard.startSession(selectedSpeed.value)
-    } catch (err) {
-      console.warn('Failed to start session:', err)
+    } catch {
+      // session start failure is non-blocking
     }
   }
   isPlaying.value = true

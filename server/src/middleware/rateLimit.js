@@ -71,14 +71,6 @@ export function createRegisterRateLimiter() {
   })
 }
 
-export function createGameSessionRateLimiter() {
-  return createRateLimiter({
-    windowMs: 60 * 1000,
-    maxRequests: 10,
-    keyGenerator: (ctx) => `game-session:${ctx.state.user?.id || ctx.ip}`
-  })
-}
-
 export function createLeaderboardRateLimiter() {
   return createRateLimiter({
     windowMs: 60 * 1000,
