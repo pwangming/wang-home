@@ -10,7 +10,8 @@ vi.mock('../../src/lib/api.js', () => ({
       logout: vi.fn(),
       me: vi.fn()
     }
-  }
+  },
+  setSessionExpiredHandler: vi.fn()
 }))
 
 // Import store after mock

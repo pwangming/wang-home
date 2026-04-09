@@ -10,6 +10,7 @@
           <button v-if="!authStore.user" class="topbar-login-btn" @click="router.push('/login')">登录</button>
           <div v-else class="topbar-user">
             <span class="topbar-username">{{ authStore.user.username || authStore.user.email }}</span>
+            <button class="topbar-logout-btn" @click="handleLogout">退出</button>
           </div>
         </div>
       </div>
@@ -185,12 +186,21 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
     submitMessage.value = '分数提交成功'
   } catch (err) {
     submitStatus.value = 'error'
-    submitMessage.value = '分数提交失败'
+    if (err.message === 'Missing authenticated session' || err.message === 'Invalid or expired token') {
+      submitMessage.value = '登录已过期，分数未保存，请重新登录'
+    } else {
+      submitMessage.value = '分数提交失败：' + (err.message || '未知错误')
+    }
   }
 
   submitStatusTimer = setTimeout(() => {
     submitStatus.value = ''
   }, 3000)
+}
+
+async function handleLogout() {
+  await authStore.logout()
+  message.success('已退出登录')
 }
 
 async function playAgain() {
@@ -330,6 +340,24 @@ onBeforeUnmount(() => {
 .topbar-user {
   display: flex;
   align-items: center;
+  gap: clamp(8px, 0.8vw, 12px);
+}
+
+.topbar-logout-btn {
+  height: clamp(28px, 2.5vw, 34px);
+  padding: 0 clamp(10px, 1vw, 14px);
+  background: transparent;
+  border: 1px solid var(--text-secondary);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: clamp(11px, 0.8vw, 13px);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topbar-logout-btn:hover {
+  border-color: #f56c6c;
+  color: #f56c6c;
 }
 
 .topbar-username {
@@ -542,7 +570,8 @@ onBeforeUnmount(() => {
   }
 
   .topbar-login-btn,
-  .topbar-user {
+  .topbar-user,
+  .topbar-logout-btn {
     display: none;
   }
 }

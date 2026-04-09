@@ -1,7 +1,7 @@
 # Kinetic Arcade 版本规划
 
 > 最后更新: 2026-04-09
-> 当前版本: v1.0.0 (待打 tag)
+> 当前版本: v1.0.0 (已打 tag)
 
 ## 版本总览
 
@@ -23,7 +23,7 @@ v1.0.0  当前状态，打 tag 作为基线
 
 ## v1.0.0 — 基线版本
 
-**状态**: 🟡 待打 tag
+**状态**: ✅ 已完成 (tag: v1.0.0)
 
 当前已完成的功能：
 - 贪吃蛇核心游戏（速度选择、分数倍率）
@@ -37,50 +37,39 @@ v1.0.0  当前状态，打 tag 作为基线
 
 ## v1.0.1 — 核心 Bug 修复
 
-**状态**: 🔴 未开始
+**状态**: 🟢 已完成
 
-### BUG-001: 后端测试失败
+### BUG-001: 后端测试失败 ✅
 - **严重度**: HIGH
-- **现象**: 8 个 server 测试失败，leaderboard routes 的 mock 与实际实现不匹配
-- **文件**: `server/tests/routes/leaderboard.test.js`
-- **修复方向**: 更新测试 mock 以匹配当前 leaderboard 路由实现
+- **修复**: 更新 leaderboard 和 auth 测试 mock，添加缺失的 `auth.getUser` mock，修正错误信息断言，修复 `/me` 测试中 `mockFrom` 重置后缺少返回值的问题
+- **文件**: `server/tests/routes/leaderboard.test.js`, `server/tests/routes/auth.test.js`
 
-### BUG-002: 登录后一段时间变未登录
+### BUG-002: 登录后一段时间变未登录 ✅
 - **严重度**: HIGH
-- **现象**: 登录成功后在首页停留一段时间，状态变为未登录
-- **根因**: Supabase JWT 1 小时过期后，后端 `authMiddleware` 用过期的 access token 调 `getUser()` 失败，直接返回 401，没有尝试用 refresh token 续期
+- **修复**: `authMiddleware` 在 `getUser()` 失败时自动用 `supabaseRefreshToken` 调 `setSession()` 刷新 token，成功后更新 session cookie
 - **文件**: `server/src/middleware/auth.js`
-- **修复方向**: 在 `getUser()` 失败时，用 session 中的 `supabaseRefreshToken` 调用 `setSession()` 刷新 token，成功后更新 session cookie
 
-### BUG-003: 前端未处理 token 过期
+### BUG-003: 前端未处理 token 过期 ✅
 - **严重度**: MEDIUM
-- **现象**: 后端返回 401 后前端没有自动重试或跳转登录
+- **修复**: API client 添加 `onSessionExpired` 回调拦截 401；auth store 添加心跳机制（每 10 分钟刷新 + visibilitychange 触发）；登录/注册后自动启动心跳，登出或 session 失效时停止
 - **文件**: `client/src/lib/api.js`, `client/src/stores/auth.js`
-- **修复方向**: API client 拦截 401 响应，尝试重新调 `/auth/me`，失败则清空 auth store 并提示用户
 
 ---
 
 ## v1.0.2 — 体验 Bug 修复
 
-**状态**: 🔴 未开始
+**状态**: 🟢 已完成
 
-### BUG-004: 前端无登录状态心跳
-- **严重度**: MEDIUM
-- **现象**: `auth.init()` 只在页面加载时调一次，长时间停留不会刷新状态
-- **文件**: `client/src/stores/auth.js`
-- **修复方向**: 添加定时器（如每 10 分钟）调 `/auth/me` 刷新状态；页面重新可见时（visibilitychange）也触发一次
+### BUG-004: 前端无登录状态心跳 ✅ (已在 BUG-003 中一并解决)
+- **修复**: auth store 心跳机制已包含 10 分钟定时刷新 + visibilitychange 触发
 
-### BUG-005: 登出无用户反馈
-- **严重度**: LOW
-- **现象**: 点击登出后静默清空状态，没有 toast 提示
+### BUG-005: 登出无用户反馈 ✅
+- **修复**: 顶部导航添加「退出」按钮，点击后显示 naive-ui success toast「已退出登录」
 - **文件**: `client/src/views/GameView.vue`
-- **修复方向**: 登出成功后显示 naive-ui message 提示
 
-### BUG-006: 游戏结束分数提交失败无明确提示
-- **严重度**: LOW
-- **现象**: 分数提交如果因 token 过期失败，用户只看到模糊错误
+### BUG-006: 游戏结束分数提交失败无明确提示 ✅
+- **修复**: 区分 401（登录已过期）和其他错误，显示针对性提示信息
 - **文件**: `client/src/views/GameView.vue`
-- **修复方向**: 区分 401 错误和其他错误，给出针对性提示
 
 ---
 
@@ -147,3 +136,5 @@ v1.0.0  当前状态，打 tag 作为基线
 | 日期 | 变更内容 |
 |------|----------|
 | 2026-04-09 | 初始版本规划创建 |
+| 2026-04-09 | v1.0.0 tag 已打；BUG-001/002/003/004 修复完成 |
+| 2026-04-09 | BUG-005/006 修复完成，v1.0.1 + v1.0.2 全部完成 |

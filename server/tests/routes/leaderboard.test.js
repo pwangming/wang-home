@@ -45,6 +45,8 @@ const mockAuthMiddleware = jest.fn(async (ctx, next) => {
 })
 
 // Mock Supabase client
+const mockGetUser = jest.fn()
+
 const mockFrom = jest.fn(() => ({
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
@@ -58,6 +60,7 @@ const mockFrom = jest.fn(() => ({
 }))
 
 const mockCreateClient = jest.fn(() => ({
+  auth: { getUser: mockGetUser },
   from: mockFrom
 }))
 
@@ -72,6 +75,12 @@ describe('Leaderboard Routes', () => {
 
   beforeEach(() => {
     mockFrom.mockReset()
+    mockGetUser.mockReset()
+    // Configure getUser to return valid user for authenticated requests
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'test-user-id', email: 'test@test.com' } },
+      error: null
+    })
     mockAuthMiddleware.mockReset()
     mockAuthMiddleware.mockImplementation(async (ctx, next) => {
       const cookie = ctx.headers.cookie || ''
@@ -195,7 +204,7 @@ describe('Leaderboard Routes', () => {
         scoreMultiplier: 1.0
       }, {})
       expect(res.status).toBe(401)
-      expect(res.body.error).toBe('未登录，无法保存分数')
+      expect(res.body.error).toBe('Missing authenticated session')
     })
 
     test('returns 400 when score is missing', async () => {
@@ -231,14 +240,12 @@ describe('Leaderboard Routes', () => {
     })
 
     test('inserts score via user-scoped client on success', async () => {
-      const mockInsert = jest.fn().mockReturnThis()
-      const mockSingle = jest.fn().mockResolvedValue({
+      const mockInsert = jest.fn().mockResolvedValue({
         data: { id: 'session-id', score: 100 },
         error: null
       })
       mockFrom.mockReturnValue({
-        insert: mockInsert,
-        single: mockSingle
+        insert: mockInsert
       })
 
       app = leaderboardRouter()

@@ -228,6 +228,15 @@ describe('Auth Routes', () => {
     test('returns user data when token valid', async () => {
       const mockUser = { id: '123', email: 'test@test.com' }
       mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      // Re-setup mockFrom for createUserScopedClient().from('profiles') call
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { username: 'testuser' },
+          error: null
+        })
+      })
       const res = await simulateRequest(app, 'GET', '/api/auth/me', null, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
       expect(res.status).toBe(200)
       expect(res.body.data.user.id).toBe('123')

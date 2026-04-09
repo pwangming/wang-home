@@ -1,5 +1,12 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
+// Callback for handling session expiry, set by auth store
+let onSessionExpired = null
+
+export function setSessionExpiredHandler(handler) {
+  onSessionExpired = handler
+}
+
 async function request(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
@@ -13,7 +20,13 @@ async function request(path, options = {}) {
   })
   const json = await res.json()
 
-  if (!res.ok) throw new Error(json.error || 'Request failed')
+  if (!res.ok) {
+    // If 401 and not already on the /auth/me endpoint, notify session expired
+    if (res.status === 401 && !path.endsWith('/auth/me') && onSessionExpired) {
+      onSessionExpired()
+    }
+    throw new Error(json.error || 'Request failed')
+  }
   return json.data !== undefined ? json.data : json
 }
 

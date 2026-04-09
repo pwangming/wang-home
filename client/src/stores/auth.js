@@ -1,10 +1,13 @@
 import { defineStore } from 'pinia'
 import { api } from '../lib/api.js'
+import { setSessionExpiredHandler } from '../lib/api.js'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    isLoading: false
+    isLoading: false,
+    _refreshTimer: null,
+    _handleVisibility: null
   }),
 
   actions: {
@@ -18,11 +21,23 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.isLoading = false
       }
+
+      // Register session expired handler
+      setSessionExpiredHandler(() => {
+        this.user = null
+        this._stopHeartbeat()
+      })
+
+      // Start heartbeat if logged in
+      if (this.user) {
+        this._startHeartbeat()
+      }
     },
 
     async login(email, password) {
       const data = await api.auth.login(email, password)
       this.user = data.user
+      this._startHeartbeat()
       return data
     },
 
@@ -32,16 +47,56 @@ export const useAuthStore = defineStore('auth', {
         return data
       }
       this.user = data.user
+      this._startHeartbeat()
       return data
     },
 
     async logout() {
+      this._stopHeartbeat()
       try {
         await api.auth.logout()
       } catch {
         // ignore error
       } finally {
         this.user = null
+      }
+    },
+
+    async _refreshSession() {
+      try {
+        const data = await api.auth.me()
+        this.user = data.user
+      } catch {
+        this.user = null
+        this._stopHeartbeat()
+      }
+    },
+
+    _startHeartbeat() {
+      this._stopHeartbeat()
+
+      // Refresh session every 10 minutes
+      this._refreshTimer = setInterval(() => {
+        this._refreshSession()
+      }, 10 * 60 * 1000)
+
+      // Refresh when page becomes visible again
+      this._handleVisibility = () => {
+        if (document.visibilityState === 'visible' && this.user) {
+          this._refreshSession()
+        }
+      }
+      document.addEventListener('visibilitychange', this._handleVisibility)
+    },
+
+    _stopHeartbeat() {
+      if (this._refreshTimer) {
+        clearInterval(this._refreshTimer)
+        this._refreshTimer = null
+      }
+      if (this._handleVisibility) {
+        document.removeEventListener('visibilitychange', this._handleVisibility)
+        this._handleVisibility = null
       }
     }
   }
