@@ -28,6 +28,24 @@ const sessConfig = {
   secure: process.env.NODE_ENV === 'production'
 }
 app.use(session(sessConfig, app))
+
+// CORS middleware
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',')
+app.use(async (ctx, next) => {
+  const origin = ctx.headers.origin
+  if (origin && allowedOrigins.some(o => o.trim() === origin)) {
+    ctx.set('Access-Control-Allow-Origin', origin)
+    ctx.set('Access-Control-Allow-Credentials', 'true')
+    ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    ctx.set('Access-Control-Allow-Headers', 'Content-Type')
+  }
+  if (ctx.method === 'OPTIONS') {
+    ctx.status = 204
+    return
+  }
+  await next()
+})
+
 app.use(bodyParser())
 
 // Attach supabase to context for all requests
