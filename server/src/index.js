@@ -14,6 +14,7 @@ if (!sessionSecret && process.env.NODE_ENV === 'production') {
   process.exit(1)
 }
 app.keys = [sessionSecret || 'dev-only-session-secret']
+app.proxy = true
 
 if (process.env.NODE_ENV === 'production' && (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY)) {
   console.error('FATAL: SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required in production')
