@@ -7,6 +7,10 @@
       @keydown="handleKeyDown"
       tabindex="0"
     />
+    <div v-if="isPaused" class="pause-overlay">
+      <div class="pause-text">已暂停</div>
+      <div class="pause-hint">按 P 继续</div>
+    </div>
   </div>
 </template>
 
@@ -48,6 +52,7 @@ const direction = ref('right')
 const score = ref(0)
 const gameLoopId = ref(null)
 const isGameRunning = ref(false)
+const isPaused = ref(false)
 
 // Base game speed (ms per tick)
 const baseSpeed = 150
@@ -165,9 +170,15 @@ function draw() {
   ctx.fillText(`分数: ${score.value}`, 10, 25)
 }
 
+// Toggle pause
+function togglePause() {
+  if (!isGameRunning.value) return
+  isPaused.value = !isPaused.value
+}
+
 // Game tick
 function tick() {
-  if (!isGameRunning.value) return
+  if (!isGameRunning.value || isPaused.value) return
 
   // Calculate new head position
   const head = { ...snake.value[0] }
@@ -234,6 +245,7 @@ function handleGameOver() {
 function startGame() {
   initGame()
   isGameRunning.value = true
+  isPaused.value = false
   draw()
   gameLoopId.value = setInterval(tick, gameSpeed.value)
 }
@@ -262,6 +274,10 @@ function handleKeyDown(e) {
   }
 
   switch (e.key) {
+    case 'p':
+    case 'P':
+      togglePause()
+      break
     case 'Escape':
       stopGame()
       break
@@ -271,7 +287,8 @@ function handleKeyDown(e) {
 // Expose methods for parent component
 defineExpose({
   startGame,
-  stopGame
+  stopGame,
+  togglePause
 })
 
 // Watch for speed changes during game
@@ -311,6 +328,7 @@ onUnmounted(() => {
 
 <style scoped>
 .snake-game {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -321,5 +339,29 @@ canvas {
   border: 2px solid #4ade80;
   border-radius: 4px;
   box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 26, 46, 0.75);
+  border-radius: 4px;
+  gap: 8px;
+}
+
+.pause-text {
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: bold;
+  color: #4ade80;
+  text-shadow: 0 0 20px rgba(74, 222, 128, 0.8);
+}
+
+.pause-hint {
+  font-size: clamp(13px, 1.2vw, 16px);
+  color: rgba(255, 255, 255, 0.6);
 }
 </style>

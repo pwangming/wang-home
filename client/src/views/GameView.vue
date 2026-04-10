@@ -67,6 +67,8 @@
         :score="currentScore"
         :speed-multiplier="selectedSpeed"
         :score-multiplier="currentScoreMultiplier"
+        :best-score="bestScore"
+        :is-logged-in="!!authStore.user"
         @open-leaderboard="showLeaderboard = true"
       />
     </div>
@@ -96,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NModal, useMessage } from 'naive-ui'
 import SnakeGame from '../components/game/SnakeGame.vue'
@@ -110,10 +112,18 @@ const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
 
+const VALID_SPEEDS = [1.0, 1.2, 1.5, 2.0]
+
+function loadSavedSpeed() {
+  const saved = parseFloat(localStorage.getItem('preferredSpeed'))
+  return VALID_SPEEDS.includes(saved) ? saved : 1.0
+}
+
 const isPlaying = ref(false)
 const currentScore = ref(0)
 const lastGameScore = ref(null)
-const selectedSpeed = ref(1.0)
+const selectedSpeed = ref(loadSavedSpeed())
+const bestScore = ref(null)
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
 const showGuestWarning = ref(false)
@@ -127,6 +137,23 @@ let previousHtmlOverflow = ''
 
 const SPEED_SCORE_MAP = { 1.0: 1.0, 1.2: 1.5, 1.5: 2.0, 2.0: 3.0 }
 const currentScoreMultiplier = computed(() => SPEED_SCORE_MAP[selectedSpeed.value] || 1.0)
+
+watch(selectedSpeed, (val) => {
+  localStorage.setItem('preferredSpeed', val)
+})
+
+async function fetchBestScore() {
+  if (!authStore.user) {
+    bestScore.value = null
+    return
+  }
+  try {
+    const data = await api.leaderboard.getMyRank()
+    bestScore.value = data?.rank?.best_score ?? null
+  } catch {
+    bestScore.value = null
+  }
+}
 
 function checkGuestWarning() {
   if (!authStore.user && !hasSeenGuestWarning.value) {
@@ -184,6 +211,7 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
     await api.leaderboard.submitScore(null, finalScore, speedMult, scoreMult, new Date().toISOString(), null)
     submitStatus.value = 'success'
     submitMessage.value = '分数提交成功'
+    fetchBestScore()
   } catch (err) {
     submitStatus.value = 'error'
     if (err.message === 'Missing authenticated session' || err.message === 'Invalid or expired token') {
@@ -220,6 +248,7 @@ onMounted(async () => {
   bodyEl.style.overflow = 'hidden'
 
   await authStore.init()
+  fetchBestScore()
   checkGuestWarning()
 })
 

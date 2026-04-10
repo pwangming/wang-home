@@ -14,6 +14,15 @@
         <span class="score-info-label">得分倍率</span>
         <span class="score-info-value">{{ scoreMultiplier }}x</span>
       </div>
+      <template v-if="isLoggedIn">
+        <div class="score-divider" />
+        <div class="score-info-row">
+          <span class="score-info-label">我的最高分</span>
+          <span class="score-info-value best-score-value">
+            {{ bestScore !== null ? bestScore.toLocaleString() : '--' }}
+          </span>
+        </div>
+      </template>
     </div>
 
     <button data-testid="open-leaderboard-btn" class="leaderboard-btn" @click="$emit('open-leaderboard')">
@@ -77,6 +86,14 @@ const props = defineProps({
   scoreMultiplier: {
     type: Number,
     default: 1.0
+  },
+  bestScore: {
+    type: Number,
+    default: null
+  },
+  isLoggedIn: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -148,6 +165,10 @@ const latestAchievement = computed(() => {
   font-size: clamp(14px, 1vw, 16px);
   color: var(--text-primary);
   font-weight: bold;
+}
+
+.best-score-value {
+  color: var(--neon-green);
 }
 
 .leaderboard-btn {

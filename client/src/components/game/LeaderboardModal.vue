@@ -53,6 +53,7 @@
 import { ref, computed, watch } from 'vue'
 import { NModal } from 'naive-ui'
 import { api } from '../../lib/api.js'
+import { useAuthStore } from '../../stores/auth.js'
 
 const props = defineProps({
   show: Boolean
@@ -60,6 +61,7 @@ const props = defineProps({
 
 defineEmits(['update:show'])
 
+const authStore = useAuthStore()
 const activeTab = ref('all')
 const entries = ref([])
 const myRank = ref(null)
@@ -88,6 +90,7 @@ function formatTime(seconds) {
 }
 
 function normalizeLeaderboardRows(rows) {
+  const currentUserId = authStore.user?.id || null
   return rows.map((row, index) => ({
     id: row.user_id,
     rank: index + 1,
@@ -95,7 +98,7 @@ function normalizeLeaderboardRows(rows) {
     avatar: row.avatar_url || null,
     score: row.best_score || 0,
     duration: null,
-    isMine: false
+    isMine: currentUserId !== null && row.user_id === currentUserId
   }))
 }
 
