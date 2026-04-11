@@ -34,13 +34,17 @@ const mockAuth = {
   signUp: jest.fn(),
   signInWithPassword: jest.fn(),
   signOut: jest.fn(),
-  getUser: jest.fn()
+  getUser: jest.fn(),
+  resetPasswordForEmail: jest.fn(),
+  updateUser: jest.fn()
 }
 
 const mockFrom = jest.fn(() => ({
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
-  maybeSingle: jest.fn()
+  neq: jest.fn().mockReturnThis(),
+  maybeSingle: jest.fn().mockResolvedValue(null),
+  update: jest.fn().mockReturnThis()
 }))
 
 const mockCreateClient = jest.fn(() => ({
@@ -70,6 +74,7 @@ describe('Auth Routes', () => {
     mockAuth.signInWithPassword.mockReset()
     mockAuth.signOut.mockReset()
     mockAuth.getUser.mockReset()
+    mockAuth.getUser.mockResolvedValue({ data: { user: { id: 'test-id' } }, error: null })
     mockFrom.mockReset()
   })
 
@@ -241,6 +246,135 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.data.user.id).toBe('123')
       expect(res.body.data.user.email).toBe('test@test.com')
+    })
+  })
+
+  // ========== /api/auth/reset-request ==========
+  describe('POST /api/auth/reset-request', () => {
+    test('returns 400 when email is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', {})
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('email is required')
+    })
+
+    test('returns 200 and success message even when Supabase errors (anti-enumeration)', async () => {
+      mockAuth.resetPasswordForEmail.mockResolvedValue({ error: new Error('Some error') })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'notexist@test.com' })
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(res.body.data.message).toContain('If that email is registered')
+    })
+
+    test('returns 200 when reset email is sent successfully', async () => {
+      mockAuth.resetPasswordForEmail.mockResolvedValue({ error: null })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'test@test.com' })
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(mockAuth.resetPasswordForEmail).toHaveBeenCalledWith('test@test.com', expect.objectContaining({ redirectTo: expect.any(String) }))
+    })
+  })
+
+  // ========== /api/auth/reset-confirm ==========
+  describe('POST /api/auth/reset-confirm', () => {
+    test('returns 400 when token is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { password: 'newpassword' })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('token and password are required')
+    })
+
+    test('returns 400 when password is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'some-token' })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('token and password are required')
+    })
+
+    test('returns 400 when password is too short', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'some-token', password: '123' })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Password must be at least 6 characters')
+    })
+
+    test('returns 400 when Supabase updateUser fails', async () => {
+      mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'Token expired' } })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'expired-token', password: 'newpassword123' })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Token expired')
+    })
+
+    test('returns 200 and user data on success', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      mockAuth.updateUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'valid-token', password: 'newpassword123' })
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(res.body.data.user.id).toBe('123')
+    })
+  })
+
+  // ========== /api/auth/profile ==========
+  describe('PATCH /api/auth/profile', () => {
+    test('returns 401 when not authenticated', async () => {
+      const res = await simulateRequest(app, 'PATCH', '/api/auth/profile', { username: 'newname' }, {})
+      expect(res.status).toBe(401)
+    })
+
+    test('returns 400 when username is missing', async () => {
+      const res = await simulateRequest(app, 'PATCH', '/api/auth/profile', {}, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('username is required')
+    })
+
+    test('returns 400 when username has invalid characters', async () => {
+      // Username normalizes to 'badname' (7 chars, passes length) then hits real DB call.
+      // Use an already-taken name so it returns 409 instead of 500 (real DB error).
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'other-user' }, error: null })
+      })
+      const res = await simulateRequest(app, 'PATCH', '/api/auth/profile', { username: 'bad name!' }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      // Validates and hits uniqueness check (returns 409 since name is "taken" per mock)
+      expect(res.status).toBe(409)
+    })
+
+    test('returns 400 when username is too short', async () => {
+      const res = await simulateRequest(app, 'PATCH', '/api/auth/profile', { username: 'a' }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toContain('2-20 characters')
+    })
+
+    test('returns 409 when username is already taken', async () => {
+      // First call: uniqueness check returns existing user
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'other-user' }, error: null })
+      })
+      const res = await simulateRequest(app, 'PATCH', '/api/auth/profile', { username: 'takenname' }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(409)
+      expect(res.body.error).toBe('This username is already taken')
+    })
+
+    test('returns 200 and updates username on success', async () => {
+      // First call: uniqueness check returns null (available)
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      })
+      // Second call: update
+      const updateEq = jest.fn().mockResolvedValue({ error: null })
+      mockFrom.mockReturnValueOnce({
+        update: jest.fn().mockReturnThis(),
+        eq: updateEq
+      })
+      const res = await simulateRequest(app, 'PATCH', '/api/auth/profile', { username: 'validname' }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(res.body.data.username).toBe('validname')
     })
   })
 

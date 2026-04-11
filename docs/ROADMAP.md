@@ -215,7 +215,8 @@ v1.0.0  当前状态，打 tag 作为基线
 
 ### TECH-001: 测试覆盖率提升
 - **目标**: 前后端测试覆盖率 >= 80%
-- **当前**: 前端 16 tests (2 files)，后端 37 passed (6 files)
+- **当前**: 前端 39 tests (5 files)，后端 51 passed (6 files)
+- **新增**: `tests/composables/useSound.test.js`、`tests/components/ProfileModal.test.js`、`tests/views/ResetPasswordView.test.js`；`server/tests/routes/auth.test.js` 新增 FEAT-005/006 对应测试（13 个新 case）
 - **计划**: 补充 SnakeGame、GameView 组件测试；添加 E2E 测试覆盖核心流程
 - **验收条件**:
   - [ ] `npm run test:client -- --coverage` 报告 >= 80% 行覆盖率
