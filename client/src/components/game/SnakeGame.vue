@@ -28,7 +28,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['gameOver'])
+const emit = defineEmits(['gameOver', 'eatFood'])
 
 // Canvas setup
 const canvasRef = ref(null)
@@ -218,6 +218,7 @@ function tick() {
 // Handle eating food
 function handleEatFood() {
   score.value += Math.round(1 * props.scoreMultiplier)
+  emit('eatFood')
   placeFood()
 }
 

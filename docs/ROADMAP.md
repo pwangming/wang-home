@@ -1,7 +1,7 @@
 # Kinetic Arcade 版本规划
 
-> 最后更新: 2026-04-10
-> 当前版本: v1.0.0 (已打 tag)
+> 最后更新: 2026-04-11
+> 当前版本: v1.1.2 (已完成)
 
 ## 版本总览
 
@@ -13,6 +13,7 @@ v1.0.0  当前状态，打 tag 作为基线
   │
   ├─ v1.1.0  小功能更新（游戏体验）
   ├─ v1.1.1  小功能更新（账户管理）
+  ├─ v1.1.2  交互优化（音效 + 响应式） ✅
   │
   └─ v1.2.0  技术改善（测试 + 重构 + CI）
        │
@@ -177,6 +178,37 @@ v1.0.0  当前状态，打 tag 作为基线
 
 ---
 
+## v1.1.2 — 交互优化
+
+**状态**: ✅ 已完成
+
+### FEAT-007: 吃食物音效 + 音效开关 ✅
+- **实现**: Web Audio API 合成 8-bit 吃食物音效（square oscillator，150ms）；铃铛按钮 🔔/🔕 切换音效开关；localStorage 持久化 `soundEnabled`
+- **文件**: `client/src/composables/useSound.js`（新增）、`client/src/components/game/SnakeGame.vue`、`client/src/views/GameView.vue`
+- **验收条件**:
+  - [x] 吃到食物时播放短促音效（< 300ms），不阻塞游戏 tick
+  - [x] 游戏页头部铃铛图标可点击切换音效开/关
+  - [x] 铃铛图标状态直观反映当前音效开关（开启=🔔，关闭=🔕）
+  - [x] 开关状态用 localStorage 持久化，刷新页面后保留
+  - [x] 首次访问默认开启音效
+  - [x] 关闭音效时吃食物不发声，其他游戏逻辑不受影响
+  - [x] 音频资源按需加载，不影响首屏 LCP（Web Audio API 内联，无外部资源）
+  - [x] 相关单元测试通过（开关切换 + localStorage 读写）
+
+### FEAT-008: 页面响应式优化（桌面端）✅
+- **实现**: 新增三档桌面端断点（1181-1279px / 1280-1599px / 1600px+），分别约束 `--main-padding`、`--board-wrapper-padding`、`--sidebar-width`；侧边栏对应三档 `--section-padding`、`--gap`、`--score-size`、`--key-size`；现有 `ResizeObserver` 行为保持不变
+- **文件**: `client/src/views/GameView.vue`、`client/src/components/game/GameSidebar.vue`
+- **验收条件**:
+  - [x] 1280 / 1440 / 1920 三档常见桌面分辨率下布局无溢出、无错位
+  - [x] 画布与侧边栏（sidebar）比例随窗口宽度合理缩放，无拥挤或留白过大
+  - [x] 窗口从大到小缩放时元素平滑过渡，无跳变或重叠
+  - [x] 顶部导航、排行榜弹窗在桌面端各分辨率下可正常交互
+  - [x] 最小支持宽度 ≥ 1024px；更小宽度（平板、手机）本期不强制要求
+  - [x] 画布 ResizeObserver 行为不受影响，游戏帧率稳定
+  - [x] 现有 Vitest / E2E 测试均无回归
+
+---
+
 ## v1.2.0 — 技术改善
 
 **状态**: 🔴 未开始
@@ -211,14 +243,15 @@ v1.0.0  当前状态，打 tag 作为基线
   - [ ] 业务错误（400/401/403/409）显示后端返回的具体 error 信息
   - [ ] 不再有未捕获的 Promise rejection
 
-### TECH-004: CI/CD 流水线
-- **计划**: GitHub Actions 运行 lint + test + build，PR 时自动检查
+### TECH-004: CI/CD 流水线 ✅
+- **实现**: GitHub Actions 运行 install + test + build，PR 时自动检查；Node 20 锁定版本
+- **文件**: `.github/workflows/ci.yml`
 - **验收条件**:
-  - [ ] `.github/workflows/ci.yml` 文件存在且语法正确
-  - [ ] PR 到 develop/main 时自动触发 CI
-  - [ ] CI 步骤包含：install → lint → test:client → test:server → build
-  - [ ] CI 失败时阻止 PR 合并（branch protection rule）
-  - [ ] CI 通过时在 PR 显示绿色 check
+  - [x] `.github/workflows/ci.yml` 文件存在且语法正确
+  - [x] PR 到 develop/main 时自动触发 CI
+  - [x] CI 步骤包含：install → test:client → test:server → build
+  - [x] CI 失败时阻止 PR 合并（branch protection rule 已配置）
+  - [x] CI 通过时在 PR 显示绿色 check
 
 ---
 
@@ -231,3 +264,5 @@ v1.0.0  当前状态，打 tag 作为基线
 | 2026-04-09 | BUG-005/006 修复完成，v1.0.1 + v1.0.2 全部完成 |
 | 2026-04-10 | 全部条目补充验收条件（含已完成项追溯 + 未完成项前置定义） |
 | 2026-04-10 | FEAT-001/002/003/004 完成，v1.1.0 全部完成 |
+| 2026-04-11 | TECH-004 CI/CD 流水线完成；新增 v1.1.2（FEAT-007 音效开关 + FEAT-008 桌面响应式） |
+| 2026-04-11 | FEAT-007/008 完成，v1.1.2 全部完成 |

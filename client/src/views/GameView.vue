@@ -5,7 +5,9 @@
       <div class="game-topbar__inner">
         <div class="game-topbar__logo">霓虹贪吃蛇</div>
         <div class="game-topbar__actions">
-          <button class="topbar-btn">🔔</button>
+          <button class="topbar-btn" :aria-label="soundEnabled ? '关闭音效' : '开启音效'" @click="soundToggle">
+            {{ soundEnabled ? '🔔' : '🔕' }}
+          </button>
           <button class="topbar-btn">⚙️</button>
           <button v-if="!authStore.user" class="topbar-login-btn" @click="router.push('/login')">登录</button>
           <div v-else class="topbar-user">
@@ -56,6 +58,7 @@
               :speed-multiplier="selectedSpeed"
               :score-multiplier="currentScoreMultiplier"
               @game-over="handleGameOver"
+              @eat-food="onEatFood"
             />
           </div>
         </div>
@@ -107,10 +110,16 @@ import LeaderboardModal from '../components/game/LeaderboardModal.vue'
 import SpeedSelector from '../components/game/SpeedSelector.vue'
 import { useAuthStore } from '../stores/auth.js'
 import { api } from '../lib/api.js'
+import { useSound } from '../composables/useSound.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
+const { soundEnabled, toggle: soundToggle, playEat: playEatSound } = useSound()
+
+function onEatFood() {
+  playEatSound()
+}
 
 const VALID_SPEEDS = [1.0, 1.2, 1.5, 2.0]
 
@@ -552,6 +561,8 @@ onBeforeUnmount(() => {
 }
 
 /* === Responsive Breakpoints === */
+
+/* Tablet portrait: stack vertically */
 @media (max-width: 1180px) {
   .game-main {
     flex-direction: column;
@@ -571,6 +582,37 @@ onBeforeUnmount(() => {
   .game-sidebar-panel {
     width: 100%;
     max-width: 600px;
+  }
+}
+
+/* Narrow desktop: tighten spacing */
+@media (min-width: 1181px) and (max-width: 1279px) {
+  .game-page {
+    --main-padding: 16px;
+    --board-wrapper-padding: 12px;
+    --sidebar-width: 260px;
+  }
+
+  .game-topbar__logo {
+    font-size: 18px;
+  }
+}
+
+/* Standard desktop (1280px+) */
+@media (min-width: 1280px) and (max-width: 1599px) {
+  .game-page {
+    --main-padding: 24px;
+    --board-wrapper-padding: 16px;
+    --sidebar-width: 280px;
+  }
+}
+
+/* Wide desktop (1600px+) */
+@media (min-width: 1600px) {
+  .game-page {
+    --main-padding: 32px;
+    --board-wrapper-padding: 24px;
+    --sidebar-width: 340px;
   }
 }
 

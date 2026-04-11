@@ -378,6 +378,7 @@ const latestAchievement = computed(() => {
   }
 }
 
+/* Tablet portrait: stack vertically */
 @media (max-width: 1180px) {
   .game-sidebar {
     width: 100%;
@@ -409,6 +410,28 @@ const latestAchievement = computed(() => {
   .controls-section {
     flex: 1;
     min-width: 200px;
+  }
+}
+
+/* Narrow desktop: compact sidebar */
+@media (min-width: 1181px) and (max-width: 1279px) {
+  .game-sidebar {
+    --sidebar-width: 260px;
+    --section-padding: 12px;
+    --gap: 10px;
+    --score-size: 36px;
+    --key-size: 40px;
+  }
+}
+
+/* Standard desktop (1280px - 1599px) */
+@media (min-width: 1280px) and (max-width: 1599px) {
+  .game-sidebar {
+    --sidebar-width: 280px;
+    --section-padding: 16px;
+    --gap: 12px;
+    --score-size: 42px;
+    --key-size: 44px;
   }
 }
 
