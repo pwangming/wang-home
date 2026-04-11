@@ -55,7 +55,7 @@
 
           <div class="form-options">
             <NeonCheckbox v-model="rememberMe">记住我</NeonCheckbox>
-            <a href="#" class="form-link">忘记密码？</a>
+            <router-link to="/reset-password" class="form-link">忘记密码？</router-link>
           </div>
 
           <NeonButton

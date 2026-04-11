@@ -8,10 +8,11 @@
           <button class="topbar-btn" :aria-label="soundEnabled ? '关闭音效' : '开启音效'" @click="soundToggle">
             {{ soundEnabled ? '🔔' : '🔕' }}
           </button>
-          <button class="topbar-btn">⚙️</button>
           <button v-if="!authStore.user" class="topbar-login-btn" @click="router.push('/login')">登录</button>
           <div v-else class="topbar-user">
-            <span class="topbar-username">{{ authStore.user.username || authStore.user.email }}</span>
+            <button class="topbar-username" data-testid="open-profile-btn" @click="showProfileModal = true">
+              {{ authStore.user.username || authStore.user.email }}
+            </button>
             <button class="topbar-logout-btn" @click="handleLogout">退出</button>
           </div>
         </div>
@@ -84,6 +85,13 @@
     <!-- 排行榜弹窗 -->
     <LeaderboardModal v-model:show="showLeaderboard" />
 
+    <!-- 用户名修改弹窗 -->
+    <ProfileModal
+      v-model:show="showProfileModal"
+      :current-username="authStore.user?.username || ''"
+      @username-updated="handleUsernameUpdated"
+    />
+
     <!-- 游客警告弹窗 -->
     <n-modal v-model:show="showGuestWarning" :mask-closable="false" preset="card" title="提示" style="max-width: 400px;">
       <div class="guest-warning-content">
@@ -107,6 +115,7 @@ import { NButton, NModal, useMessage } from 'naive-ui'
 import SnakeGame from '../components/game/SnakeGame.vue'
 import GameSidebar from '../components/game/GameSidebar.vue'
 import LeaderboardModal from '../components/game/LeaderboardModal.vue'
+import ProfileModal from '../components/game/ProfileModal.vue'
 import SpeedSelector from '../components/game/SpeedSelector.vue'
 import { useAuthStore } from '../stores/auth.js'
 import { api } from '../lib/api.js'
@@ -135,6 +144,7 @@ const selectedSpeed = ref(loadSavedSpeed())
 const bestScore = ref(null)
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
+const showProfileModal = ref(false)
 const showGuestWarning = ref(false)
 const hasSeenGuestWarning = ref(false)
 const submitStatus = ref('')
@@ -238,6 +248,11 @@ async function handleGameOver(finalScore, speedMult, scoreMult) {
 async function handleLogout() {
   await authStore.logout()
   message.success('已退出登录')
+}
+
+async function handleUsernameUpdated(newUsername) {
+  await authStore.updateProfile(newUsername)
+  message.success('用户名已更新')
 }
 
 async function playAgain() {
@@ -405,6 +420,16 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.topbar-username:hover {
+  color: var(--neon-green);
 }
 
 /* 主要内容区 */

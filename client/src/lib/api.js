@@ -37,7 +37,13 @@ export const api = {
     login: (email, password) =>
       request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     logout: () => request('/auth/logout', { method: 'POST' }),
-    me: () => request('/auth/me')
+    me: () => request('/auth/me'),
+    resetRequest: (email) =>
+      request('/auth/reset-request', { method: 'POST', body: JSON.stringify({ email }) }),
+    resetConfirm: (token, password) =>
+      request('/auth/reset-confirm', { method: 'POST', body: JSON.stringify({ token, password }) }),
+    updateProfile: (username) =>
+      request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ username }) })
   },
   leaderboard: {
     list: (page = 1, pageSize = 20) =>

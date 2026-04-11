@@ -116,6 +116,98 @@ function createAuthRouter() {
     ok(ctx, { user: { ...ctx.state.user, username: profile?.username || null } })
   })
 
+  // POST /reset-request
+  // Accepts { email }, sends a password reset email via Supabase.
+  // Always returns success to prevent email enumeration.
+  router.post('/reset-request', createCsrfMiddleware(), async (ctx) => {
+    const { email } = ctx.request.body
+
+    if (!email) {
+      fail(ctx, 400, 'email is required')
+      return
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${ctx.headers.origin || 'https://client-inky-two.vercel.app'}/reset-password`
+    })
+
+    // Always return 200 to avoid leaking which emails are registered
+    if (error) {
+      console.error('[auth] resetPasswordForEmail error:', error.message)
+    }
+
+    ok(ctx, { message: 'If that email is registered, a password reset link has been sent.' })
+  })
+
+  // POST /reset-confirm
+  // Accepts { token, password }, updates the user's password.
+  router.post('/reset-confirm', createCsrfMiddleware(), async (ctx) => {
+    const { token, password } = ctx.request.body
+
+    if (!token || !password) {
+      fail(ctx, 400, 'token and password are required')
+      return
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
+      fail(ctx, 400, 'Password must be at least 6 characters')
+      return
+    }
+
+    const { data, error } = await supabase.auth.updateUser(token, { password })
+
+    if (error) {
+      fail(ctx, 400, error.message)
+      return
+    }
+
+    ok(ctx, { user: { id: data.user.id, email: data.user.email } })
+  })
+
+  // PATCH /profile
+  // Updates the authenticated user's profile (username).
+  router.patch('/profile', authMiddleware, createCsrfMiddleware(), async (ctx) => {
+    const { username } = ctx.request.body
+
+    if (!username || typeof username !== 'string') {
+      fail(ctx, 400, 'username is required')
+      return
+    }
+
+    const normalizedUsername = normalizeUsername(username)
+
+    if (normalizedUsername.length < 2 || normalizedUsername.length > 20) {
+      fail(ctx, 400, 'Username must be 2-20 characters (letters, numbers, underscore only)')
+      return
+    }
+
+    // Check uniqueness
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username_normalized', normalizedUsername.toLowerCase())
+      .neq('id', ctx.state.user.id)
+      .maybeSingle()
+
+    if (existing) {
+      fail(ctx, 409, 'This username is already taken')
+      return
+    }
+
+    const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
+    const { error: updateError } = await userScopedClient
+      .from('profiles')
+      .update({ username: normalizedUsername, username_normalized: normalizedUsername.toLowerCase() })
+      .eq('id', ctx.state.user.id)
+
+    if (updateError) {
+      fail(ctx, 500, 'Failed to update username. Please try again.')
+      return
+    }
+
+    ok(ctx, { username: normalizedUsername })
+  })
+
   // POST /logout
   router.post('/logout', async (ctx) => {
     // Clear session regardless of Supabase result

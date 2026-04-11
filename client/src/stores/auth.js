@@ -62,6 +62,14 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async updateProfile(username) {
+      const data = await api.auth.updateProfile(username)
+      if (this.user) {
+        this.user = { ...this.user, username: data.username }
+      }
+      return data
+    },
+
     async _refreshSession() {
       try {
         const data = await api.auth.me()

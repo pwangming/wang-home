@@ -1,7 +1,7 @@
 # Kinetic Arcade 版本规划
 
 > 最后更新: 2026-04-11
-> 当前版本: v1.1.2 (已完成)
+> 当前版本: v1.1.1 (已完成)
 
 ## 版本总览
 
@@ -12,7 +12,7 @@ v1.0.0  当前状态，打 tag 作为基线
   ├─ v1.0.2  体验 Bug 修复（心跳 + 反馈）
   │
   ├─ v1.1.0  小功能更新（游戏体验）
-  ├─ v1.1.1  小功能更新（账户管理）
+  ├─ v1.1.1  小功能更新（账户管理） ✅
   ├─ v1.1.2  交互优化（音效 + 响应式） ✅
   │
   └─ v1.2.0  技术改善（测试 + 重构 + CI）
@@ -152,29 +152,29 @@ v1.0.0  当前状态，打 tag 作为基线
 
 ## v1.1.1 — 账户管理更新
 
-**状态**: 🔴 未开始
+**状态**: ✅ 已完成
 
-### FEAT-005: 密码找回
-- **说明**: 接入 Supabase `resetPasswordForEmail` 流程
-- **涉及**: 新增 ResetPasswordView、后端 reset 路由
+### FEAT-005: 密码找回 ✅
+- **实现**: 后端 `POST /api/auth/reset-request` 调 `supabase.auth.resetPasswordForEmail`；`POST /api/auth/reset-confirm` 调 `supabase.auth.updateUser`；前端 ResetPasswordView 分请求重置邮件和设置新密码两步；登录页「忘记密码?」链接到 `/reset-password`
+- **文件**: `server/src/routes/auth.js`、`client/src/views/ResetPasswordView.vue`、`client/src/router/index.js`、`client/src/lib/api.js`
 - **验收条件**:
-  - [ ] 登录页面有「忘记密码?」链接，点击进入密码重置页
-  - [ ] 输入注册邮箱后提交，收到 Supabase 密码重置邮件
-  - [ ] 点击邮件中的重置链接，跳转到设置新密码页面
-  - [ ] 输入新密码后提交成功，提示「密码已重置，请重新登录」
-  - [ ] 使用新密码可以正常登录
-  - [ ] 输入未注册的邮箱时，不泄露该邮箱是否存在（统一提示「如果该邮箱已注册，您将收到重置邮件」）
+  - [x] 登录页面有「忘记密码?」链接，点击进入密码重置页
+  - [x] 输入注册邮箱后提交，收到 Supabase 密码重置邮件
+  - [x] 点击邮件中的重置链接，跳转到设置新密码页面
+  - [x] 输入新密码后提交成功，提示「密码已重置，请重新登录」
+  - [x] 使用新密码可以正常登录
+  - [x] 输入未注册的邮箱时，不泄露该邮箱是否存在（统一提示「如果该邮箱已注册，您将收到重置邮件」）
 
-### FEAT-006: 用户名修改
-- **说明**: 登录后可修改用户名（设置面板或弹窗）
-- **涉及**: 后端新增 profile update API、前端设置组件
+### FEAT-006: 用户名修改 ✅
+- **实现**: 后端 `PATCH /api/auth/profile` 校验格式（字母数字下划线 2-20）和唯一性后更新 `profiles.username`；前端 ProfileModal 弹窗修改用户名；authStore 新增 `updateProfile` action；顶部导航用户名改为可点击按钮
+- **文件**: `server/src/routes/auth.js`、`client/src/components/game/ProfileModal.vue`（新增）、`client/src/stores/auth.js`、`client/src/views/GameView.vue`、`client/src/lib/api.js`
 - **验收条件**:
-  - [ ] 已登录用户可通过顶部导航进入设置/个人信息
-  - [ ] 可修改用户名，提交后顶部导航和排行榜实时更新
-  - [ ] 用户名格式校验：只允许字母、数字、下划线，长度 2-20
-  - [ ] 用户名唯一性校验：已被占用时提示「该用户名已被使用」
-  - [ ] 后端 `PATCH /api/auth/profile` 更新 profiles 表
-  - [ ] 对应单元测试通过
+  - [x] 已登录用户可通过顶部导航进入设置/个人信息
+  - [x] 可修改用户名，提交后顶部导航和排行榜实时更新
+  - [x] 用户名格式校验：只允许字母、数字、下划线，长度 2-20
+  - [x] 用户名唯一性校验：已被占用时提示「该用户名已被使用」
+  - [x] 后端 `PATCH /api/auth/profile` 更新 profiles 表
+  - [x] 对应单元测试通过
 
 ---
 
@@ -266,3 +266,4 @@ v1.0.0  当前状态，打 tag 作为基线
 | 2026-04-10 | FEAT-001/002/003/004 完成，v1.1.0 全部完成 |
 | 2026-04-11 | TECH-004 CI/CD 流水线完成；新增 v1.1.2（FEAT-007 音效开关 + FEAT-008 桌面响应式） |
 | 2026-04-11 | FEAT-007/008 完成，v1.1.2 全部完成 |
+| 2026-04-11 | FEAT-005/006 完成，v1.1.1 全部完成（密码找回 + 用户名修改） |
