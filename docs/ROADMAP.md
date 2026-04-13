@@ -1,21 +1,21 @@
 # Kinetic Arcade 版本规划
 
-> 最后更新: 2026-04-11
-> 当前版本: v1.1.1 (已完成)
+> 最后更新: 2026-04-13
+> 当前版本: v1.1.2 (已完成)
 
 ## 版本总览
 
 ```
-v1.0.0  当前状态，打 tag 作为基线
+v1.0.0  基线版本 ✅
   │
-  ├─ v1.0.1  核心 Bug 修复（认证 + 测试）
-  ├─ v1.0.2  体验 Bug 修复（心跳 + 反馈）
+  ├─ v1.0.1  核心 Bug 修复（认证 + 测试） ✅
+  ├─ v1.0.2  体验 Bug 修复（心跳 + 反馈） ✅
   │
-  ├─ v1.1.0  小功能更新（游戏体验）
+  ├─ v1.1.0  小功能更新（游戏体验） ✅
   ├─ v1.1.1  小功能更新（账户管理） ✅
   ├─ v1.1.2  交互优化（音效 + 响应式） ✅
   │
-  └─ v1.2.0  技术改善（测试 + 重构 + CI）
+  └─ v1.2.0  技术改善（Bundle + 测试 + 重构 + 安全）
        │
        └─ v2.0 大版本开发基础就绪
 ```
@@ -213,36 +213,50 @@ v1.0.0  当前状态，打 tag 作为基线
 
 **状态**: 🔴 未开始
 
+**执行顺序**: TECH-005 → TECH-001 → TECH-002 → TECH-003 → TECH-006
+
+### TECH-005: 前端 Bundle 优化（新增）
+- **现状**: `index.js` chunk 1,469 KB (gzip 406 KB)，远超 300 KB 预算；naive-ui 全量打包是主因
+- **计划**: naive-ui 按需引入（unplugin-auto-import + unplugin-vue-components），Vite manualChunks 拆分 vendor
+- **验收条件**:
+  - [ ] 单个 JS chunk < 500 KB (gzip < 150 KB)
+  - [ ] 首屏总 JS < 300 KB gzip
+  - [ ] `npx vite build` 无 chunk size warning
+  - [ ] 页面功能无回归（手动验证）
+
 ### TECH-001: 测试覆盖率提升
 - **目标**: 前后端测试覆盖率 >= 80%
-- **当前**: 前端 39 tests (5 files)，后端 51 passed (6 files)
-- **新增**: `tests/composables/useSound.test.js`、`tests/components/ProfileModal.test.js`、`tests/views/ResetPasswordView.test.js`；`server/tests/routes/auth.test.js` 新增 FEAT-005/006 对应测试（13 个新 case）
-- **计划**: 补充 SnakeGame、GameView 组件测试；添加 E2E 测试覆盖核心流程
+- **当前状态** (2026-04-13):
+  - 前端 42 tests (5 files)，缺少 `@vitest/coverage-v8` 依赖
+  - 后端 53 tests (6 files)，行覆盖率 67.4%
+  - 后端主要缺口: `leaderboard.js` 61%（sessionId 二阶段提交未覆盖）、`index.js` 0%（入口文件）、`rateLimit.js` 75%
+- **前置任务**:
+  - [ ] 安装 `@vitest/coverage-v8` 依赖
+  - [ ] 后端 `leaderboard.js` 补充 sessionId 二阶段提交流程测试
+  - [ ] 后端 `jest.config.js` 排除 `src/index.js` 或补充入口文件测试
 - **验收条件**:
   - [ ] `npm run test:client -- --coverage` 报告 >= 80% 行覆盖率
   - [ ] `npm run test:server -- --coverage` 报告 >= 80% 行覆盖率
   - [ ] E2E 测试覆盖：注册 → 登录 → 游戏 → 分数提交 → 排行榜 核心流程
-  - [ ] E2E 测试覆盖：token 过期后自动刷新场景
   - [ ] CI 中测试全部通过
 
 ### TECH-002: GameView.vue 拆分
-- **现状**: 571 行，职责过多（游戏控制、分数提交、弹窗管理、键盘事件）
-- **计划**: 提取 `useGameSession` composable、提取分数提交逻辑、提取键盘快捷键处理
+- **现状**: 696 行（script ~180 行 + CSS ~400 行），CSS 占大头，script 逻辑分散在游戏会话、分数提交、游客警告三块
+- **计划**: 提取 `useGameSession` composable（游戏状态 + 分数提交 + startSession）、提取 `useGuestWarning` composable（游客警告逻辑）
 - **验收条件**:
-  - [ ] GameView.vue 不超过 300 行
-  - [ ] 提取至少 2 个 composable（游戏会话管理、分数提交）
+  - [ ] GameView.vue `<script setup>` 不超过 80 行逻辑代码
+  - [ ] 提取至少 2 个 composable（`useGameSession`、`useGuestWarning`）
   - [ ] 拆分后所有现有测试仍通过
   - [ ] 页面功能无回归（手动验证或 E2E）
 
-### TECH-003: 全局错误处理
-- **现状**: 各组件各自 try-catch，错误提示不统一
-- **计划**: API client 添加全局错误拦截，统一 toast 提示机制
+### TECH-003: API 错误处理统一
+- **现状**: 各组件各自 try-catch + `message.error(err.message)`，网络错误（fetch TypeError）未被捕获会变成 unhandled rejection
+- **计划**: API client 增加网络错误和 500 错误的统一拦截 + toast；业务错误（4xx）仍由调用方 catch 处理局部逻辑
 - **验收条件**:
-  - [ ] 所有 API 错误通过统一的错误处理器处理
-  - [ ] 网络错误显示「网络连接失败，请检查网络」
+  - [ ] 网络断开时 API 调用显示「网络连接失败，请检查网络」
   - [ ] 服务器 500 错误显示「服务器异常，请稍后重试」
-  - [ ] 业务错误（400/401/403/409）显示后端返回的具体 error 信息
-  - [ ] 不再有未捕获的 Promise rejection
+  - [ ] 业务错误（400/401/403/409）由调用方处理，保留局部逻辑（如字段级校验提示）
+  - [ ] 401 session expired 拦截逻辑不变（已实现）
 
 ### TECH-004: CI/CD 流水线 ✅
 - **实现**: GitHub Actions 运行 install + test + build，PR 时自动检查；Node 20 锁定版本
@@ -253,6 +267,17 @@ v1.0.0  当前状态，打 tag 作为基线
   - [x] CI 步骤包含：install → test:client → test:server → build
   - [x] CI 失败时阻止 PR 合并（branch protection rule 已配置）
   - [x] CI 通过时在 PR 显示绿色 check
+
+### TECH-006: 安全响应头（新增）
+- **现状**: 后端没有设置任何安全响应头，对有用户认证和 session cookie 的应用来说是缺失的
+- **计划**: 添加 Koa 中间件统一设置安全响应头
+- **验收条件**:
+  - [ ] 响应包含 `X-Content-Type-Options: nosniff`
+  - [ ] 响应包含 `X-Frame-Options: DENY`
+  - [ ] 响应包含 `Referrer-Policy: strict-origin-when-cross-origin`
+  - [ ] 响应包含 `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+  - [ ] 生产环境响应包含 `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+  - [ ] 对应单元测试通过
 
 ---
 
@@ -268,3 +293,5 @@ v1.0.0  当前状态，打 tag 作为基线
 | 2026-04-11 | TECH-004 CI/CD 流水线完成；新增 v1.1.2（FEAT-007 音效开关 + FEAT-008 桌面响应式） |
 | 2026-04-11 | FEAT-007/008 完成，v1.1.2 全部完成 |
 | 2026-04-11 | FEAT-005/006 完成，v1.1.1 全部完成（密码找回 + 用户名修改） |
+| 2026-04-13 | 审查并修复测试缺口（auth middleware refresh、updateProfile、needsEmailConfirmation）；移除 console.error |
+| 2026-04-13 | v1.2.0 规划更新：新增 TECH-005 Bundle 优化和 TECH-006 安全头；更新 TECH-001/002/003 数据和范围；删除不可靠的 E2E token 刷新场景 |
