@@ -132,9 +132,7 @@ function createAuthRouter() {
     })
 
     // Always return 200 to avoid leaking which emails are registered
-    if (error) {
-      console.error('[auth] resetPasswordForEmail error:', error.message)
-    }
+    // Supabase errors here are expected (e.g. unregistered email) and non-actionable
 
     ok(ctx, { message: 'If that email is registered, a password reset link has been sent.' })
   })

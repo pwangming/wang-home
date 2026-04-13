@@ -8,7 +8,8 @@ vi.mock('../../src/lib/api.js', () => ({
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
-      me: vi.fn()
+      me: vi.fn(),
+      updateProfile: vi.fn()
     }
   },
   setSessionExpiredHandler: vi.fn()
@@ -103,6 +104,41 @@ describe('auth Store', () => {
       api.auth.register.mockRejectedValue(new Error('Registration failed'))
 
       await expect(authStore.register('test@test.com', 'password', 'user')).rejects.toThrow('Registration failed')
+    })
+  })
+
+  describe('register() with email confirmation', () => {
+    it('should return needsEmailConfirmation without setting user', async () => {
+      const { api } = await import('../../src/lib/api.js')
+      api.auth.register.mockResolvedValue({ needsEmailConfirmation: true })
+
+      const result = await authStore.register('test@test.com', 'password123', 'testuser')
+
+      expect(result.needsEmailConfirmation).toBe(true)
+      expect(authStore.user).toBeNull()
+    })
+  })
+
+  describe('updateProfile()', () => {
+    it('should update username in user state on success', async () => {
+      const { api } = await import('../../src/lib/api.js')
+      api.auth.updateProfile.mockResolvedValue({ username: 'newname' })
+      authStore.user = { id: '123', email: 'test@test.com', username: 'oldname' }
+
+      const result = await authStore.updateProfile('newname')
+
+      expect(result.username).toBe('newname')
+      expect(authStore.user.username).toBe('newname')
+      expect(authStore.user.id).toBe('123')
+    })
+
+    it('should throw error on failure without modifying user', async () => {
+      const { api } = await import('../../src/lib/api.js')
+      api.auth.updateProfile.mockRejectedValue(new Error('Username already taken'))
+      authStore.user = { id: '123', email: 'test@test.com', username: 'oldname' }
+
+      await expect(authStore.updateProfile('takenname')).rejects.toThrow('Username already taken')
+      expect(authStore.user.username).toBe('oldname')
     })
   })
 
