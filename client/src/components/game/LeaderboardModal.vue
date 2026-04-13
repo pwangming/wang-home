@@ -51,7 +51,6 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { NModal } from 'naive-ui'
 import { api } from '../../lib/api.js'
 import { useAuthStore } from '../../stores/auth.js'
 

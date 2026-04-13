@@ -110,7 +110,6 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useMessage } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import NeonCard from '../components/ui/NeonCard.vue'
 import NeonButton from '../components/ui/NeonButton.vue'

@@ -111,7 +111,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NModal, useMessage } from 'naive-ui'
 import SnakeGame from '../components/game/SnakeGame.vue'
 import GameSidebar from '../components/game/GameSidebar.vue'
 import LeaderboardModal from '../components/game/LeaderboardModal.vue'

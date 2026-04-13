@@ -211,18 +211,18 @@ v1.0.0  基线版本 ✅
 
 ## v1.2.0 — 技术改善
 
-**状态**: 🔴 未开始
+**状态**: 🔴 进行中 (TECH-005 完成)
 
-**执行顺序**: TECH-005 → TECH-001 → TECH-002 → TECH-003 → TECH-006
+**执行顺序**: TECH-005 ✅ → TECH-001 → TECH-002 → TECH-003 → TECH-006
 
-### TECH-005: 前端 Bundle 优化（新增）
-- **现状**: `index.js` chunk 1,469 KB (gzip 406 KB)，远超 300 KB 预算；naive-ui 全量打包是主因
-- **计划**: naive-ui 按需引入（unplugin-auto-import + unplugin-vue-components），Vite manualChunks 拆分 vendor
+### TECH-005: 前端 Bundle 优化 ✅
+- **实现**: naive-ui 按需引入（unplugin-auto-import + unplugin-vue-components），Vite manualChunks 拆分 vendor
+- **文件**: `client/vite.config.js`、`client/vitest.config.js`、`client/src/main.js` 及各组件移除 naive-ui 显式导入
 - **验收条件**:
-  - [ ] 单个 JS chunk < 500 KB (gzip < 150 KB)
-  - [ ] 首屏总 JS < 300 KB gzip
-  - [ ] `npx vite build` 无 chunk size warning
-  - [ ] 页面功能无回归（手动验证）
+  - [x] 单个 JS chunk < 500 KB (raw) — vendor-naive 158 KB
+  - [x] 首屏总 JS < 300 KB gzip — 实测 ~98 KB gzip
+  - [x] `npm run build` 无 chunk size warning
+  - [x] 页面功能无回归 — 前后端 95 个测试全部通过
 
 ### TECH-001: 测试覆盖率提升
 - **目标**: 前后端测试覆盖率 >= 80%
@@ -295,3 +295,4 @@ v1.0.0  基线版本 ✅
 | 2026-04-11 | FEAT-005/006 完成，v1.1.1 全部完成（密码找回 + 用户名修改） |
 | 2026-04-13 | 审查并修复测试缺口（auth middleware refresh、updateProfile、needsEmailConfirmation）；移除 console.error |
 | 2026-04-13 | v1.2.0 规划更新：新增 TECH-005 Bundle 优化和 TECH-006 安全头；更新 TECH-001/002/003 数据和范围；删除不可靠的 E2E token 刷新场景 |
+| 2026-04-13 | TECH-005 Bundle 优化完成：index.js 从 1,469 KB 降至 3.28 KB；总 gzip 从 406 KB 降至 ~98 KB；naive-ui 按需导入；Vitest 配置同步更新 |

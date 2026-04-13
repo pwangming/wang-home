@@ -48,7 +48,6 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import { NModal, NButton, NAlert } from 'naive-ui'
 import NeonInput from '../ui/NeonInput.vue'
 import { api } from '../../lib/api.js'
 

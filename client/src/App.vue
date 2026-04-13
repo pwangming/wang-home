@@ -7,6 +7,4 @@
 </template>
 
 <script setup>
-import { NConfigProvider, NMessageProvider } from 'naive-ui'
-import { darkTheme } from 'naive-ui'
 </script>

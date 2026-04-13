@@ -22,6 +22,13 @@ vi.mock('naive-ui', () => ({
       ])
     }
   }),
+  NForm: defineComponent({
+    name: 'NForm',
+    props: ['model'],
+    setup(props, { slots }) {
+      return () => h('form', {}, slots.default?.())
+    }
+  }),
   NButton: defineComponent({
     name: 'NButton',
     props: ['type', 'loading'],
