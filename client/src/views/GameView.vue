@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="game-page">
     <!-- 顶部导航 -->
     <header class="game-topbar">
@@ -59,7 +59,7 @@
               :speed-multiplier="selectedSpeed"
               :score-multiplier="currentScoreMultiplier"
               @game-over="handleGameOver"
-              @eat-food="onEatFood"
+              @eat-food="playEatSound"
             />
           </div>
         </div>
@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import SnakeGame from '../components/game/SnakeGame.vue'
 import GameSidebar from '../components/game/GameSidebar.vue'
@@ -117,177 +117,55 @@ import LeaderboardModal from '../components/game/LeaderboardModal.vue'
 import ProfileModal from '../components/game/ProfileModal.vue'
 import SpeedSelector from '../components/game/SpeedSelector.vue'
 import { useAuthStore } from '../stores/auth.js'
-import { api } from '../lib/api.js'
 import { useSound } from '../composables/useSound.js'
+import { useGuestWarning } from '../composables/useGuestWarning.js'
+import { useGameSession } from '../composables/useGameSession.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
 const { soundEnabled, toggle: soundToggle, playEat: playEatSound } = useSound()
+const { showGuestWarning, checkGuestWarning, continueAsGuest, goToLogin } = useGuestWarning()
 
-function onEatFood() {
-  playEatSound()
-}
+const {
+  isPlaying, currentScore, lastGameScore, selectedSpeed, bestScore,
+  submitStatus, submitMessage, currentScoreMultiplier, setSnakeGameRef,
+  startGame, handleGameOver, fetchBestScore, playAgain
+} = useGameSession()
 
-const VALID_SPEEDS = [1.0, 1.2, 1.5, 2.0]
-
-function loadSavedSpeed() {
-  const saved = parseFloat(localStorage.getItem('preferredSpeed'))
-  return VALID_SPEEDS.includes(saved) ? saved : 1.0
-}
-
-const isPlaying = ref(false)
-const currentScore = ref(0)
-const lastGameScore = ref(null)
-const selectedSpeed = ref(loadSavedSpeed())
-const bestScore = ref(null)
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
 const showProfileModal = ref(false)
-const showGuestWarning = ref(false)
-const hasSeenGuestWarning = ref(false)
-const submitStatus = ref('')
-const submitMessage = ref('')
+let prevHtmlOverflow = ''
+let prevBodyOverflow = ''
 
-let submitStatusTimer = null
-let previousBodyOverflow = ''
-let previousHtmlOverflow = ''
+watch(selectedSpeed, (val) => localStorage.setItem('preferredSpeed', val))
+watch(snakeGameRef, (val) => val && setSnakeGameRef(val))
 
-const SPEED_SCORE_MAP = { 1.0: 1.0, 1.2: 1.5, 1.5: 2.0, 2.0: 3.0 }
-const currentScoreMultiplier = computed(() => SPEED_SCORE_MAP[selectedSpeed.value] || 1.0)
-
-watch(selectedSpeed, (val) => {
-  localStorage.setItem('preferredSpeed', val)
-})
-
-async function fetchBestScore() {
-  if (!authStore.user) {
-    bestScore.value = null
-    return
-  }
-  try {
-    const data = await api.leaderboard.getMyRank()
-    bestScore.value = data?.rank?.best_score ?? null
-  } catch {
-    bestScore.value = null
-  }
-}
-
-function checkGuestWarning() {
-  if (!authStore.user && !hasSeenGuestWarning.value) {
-    const seen = localStorage.getItem('guestWarningSeen')
-    if (!seen) {
-      showGuestWarning.value = true
-    }
-  }
-}
-
-function markGuestWarningSeen() {
-  hasSeenGuestWarning.value = true
-  localStorage.setItem('guestWarningSeen', 'true')
-}
-
-function continueAsGuest() {
-  showGuestWarning.value = false
-  markGuestWarningSeen()
-}
-
-function goToLogin() {
-  showGuestWarning.value = false
-  markGuestWarningSeen()
-  router.push('/login')
-}
-
-async function startGame() {
-  if (authStore.user) {
-    try {
-      await api.leaderboard.startSession(selectedSpeed.value)
-    } catch {
-      // session start failure is non-blocking
-    }
-  }
-  isPlaying.value = true
-  currentScore.value = 0
-  await nextTick()
-  snakeGameRef.value?.startGame()
-}
-
-async function handleGameOver(finalScore, speedMult, scoreMult) {
-  isPlaying.value = false
-  currentScore.value = finalScore
-  lastGameScore.value = finalScore
-
-  if (!authStore.user) {
-    message.warning('未登录状态下分数不会被记录')
-    return
-  }
-
-  submitStatus.value = 'submitting'
-  submitMessage.value = '分数提交中...'
-
-  try {
-    await api.leaderboard.submitScore(null, finalScore, speedMult, scoreMult, new Date().toISOString(), null)
-    submitStatus.value = 'success'
-    submitMessage.value = '分数提交成功'
-    fetchBestScore()
-  } catch (err) {
-    submitStatus.value = 'error'
-    if (err.message === 'Missing authenticated session' || err.message === 'Invalid or expired token') {
-      submitMessage.value = '登录已过期，分数未保存，请重新登录'
-    } else {
-      submitMessage.value = '分数提交失败：' + (err.message || '未知错误')
-    }
-  }
-
-  submitStatusTimer = setTimeout(() => {
-    submitStatus.value = ''
-  }, 3000)
-}
-
-async function handleLogout() {
-  await authStore.logout()
-  message.success('已退出登录')
-}
-
-async function handleUsernameUpdated(newUsername) {
-  await authStore.updateProfile(newUsername)
-  message.success('用户名已更新')
-}
-
-async function playAgain() {
-  lastGameScore.value = null
-  await startGame()
-}
+const handleLogout = () => authStore.logout().then(() => message.success('已退出登录'))
+const handleUsernameUpdated = (newUsername) => authStore.updateProfile(newUsername).then(() => message.success('用户名已更新'))
 
 onMounted(async () => {
-  const htmlEl = document.documentElement
-  const bodyEl = document.body
-
-  previousHtmlOverflow = htmlEl.style.overflow
-  previousBodyOverflow = document.body.style.overflow
-  htmlEl.classList.add('game-page-overflow-lock')
-  bodyEl.classList.add('game-page-overflow-lock')
-  htmlEl.style.overflow = 'hidden'
-  bodyEl.style.overflow = 'hidden'
-
+  const html = document.documentElement
+  const body = document.body
+  prevHtmlOverflow = html.style.overflow
+  prevBodyOverflow = body.style.overflow
+  html.classList.add('game-page-overflow-lock')
+  body.classList.add('game-page-overflow-lock')
+  html.style.overflow = 'hidden'
+  body.style.overflow = 'hidden'
   await authStore.init()
   fetchBestScore()
   checkGuestWarning()
 })
 
 onBeforeUnmount(() => {
-  const htmlEl = document.documentElement
-  const bodyEl = document.body
-
-  htmlEl.classList.remove('game-page-overflow-lock')
-  bodyEl.classList.remove('game-page-overflow-lock')
-  htmlEl.style.overflow = previousHtmlOverflow
-  bodyEl.style.overflow = previousBodyOverflow
-
-  if (submitStatusTimer) {
-    clearTimeout(submitStatusTimer)
-    submitStatusTimer = null
-  }
+  const html = document.documentElement
+  const body = document.body
+  html.classList.remove('game-page-overflow-lock')
+  body.classList.remove('game-page-overflow-lock')
+  html.style.overflow = prevHtmlOverflow
+  body.style.overflow = prevBodyOverflow
 })
 </script>
 
@@ -691,5 +569,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
-

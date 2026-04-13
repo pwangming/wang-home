@@ -258,5 +258,216 @@ describe('Leaderboard Routes', () => {
       expect(res.body.success).toBe(true)
       expect(mockInsert).toHaveBeenCalled()
     })
+
+    test('returns 400 when speedMultiplier is not in valid list', async () => {
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        score: 100,
+        speedMultiplier: 1.3,
+        scoreMultiplier: 1.5
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('speedMultiplier must be one of: 1.0, 1.2, 1.5, 2.0')
+    })
+
+    test('returns 400 when scoreMultiplier does not match speedMultiplier mapping', async () => {
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        score: 100,
+        speedMultiplier: 1.5,
+        scoreMultiplier: 1.0
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('scoreMultiplier does not match speedMultiplier mapping')
+    })
+
+    test('returns 400 when score exceeds reasonable limit', async () => {
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        score: 10000,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Score exceeds reasonable limit')
+    })
+  })
+
+  // ========== POST /api/leaderboard (sessionId two-phase flow) ==========
+  describe('POST /api/leaderboard with sessionId (two-phase)', () => {
+    test('completes session successfully with valid sessionId', async () => {
+      const mockSession = {
+        id: 'test-session-id',
+        is_verified: false,
+        ended_at: null
+      }
+      let callCount = 0
+      mockFrom.mockImplementation(() => {
+        const currentCall = callCount++
+        if (currentCall === 0) {
+          // First call: SELECT for session verification
+          return {
+            select: jest.fn(function() { return this }),
+            eq: jest.fn(function() { return this }),
+            maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
+          }
+        } else {
+          // Second call: UPDATE for score submission
+          // The last .eq() needs to return a Promise-like object
+          const updateChain = {
+            update: jest.fn(function() { return updateChain }),
+            eq: jest.fn(function() { return updateChain }),
+            then: jest.fn((resolve) => resolve({ error: null }))
+          }
+          return updateChain
+        }
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        sessionId: 'test-session-id',
+        score: 100,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0,
+        durationMs: 30000
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+    })
+
+    test('returns 400 when sessionId is invalid or expired', async () => {
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        sessionId: 'invalid-session-id',
+        score: 100,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Invalid or expired game session')
+    })
+
+    test('returns 409 when score already submitted for session', async () => {
+      const mockSession = {
+        id: 'test-session-id',
+        is_verified: true,
+        ended_at: '2024-01-01'
+      }
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        sessionId: 'test-session-id',
+        score: 100,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(409)
+      expect(res.body.error).toBe('Score already submitted for this session')
+    })
+
+    test('returns 400 when durationMs is too short', async () => {
+      const mockSession = {
+        id: 'test-session-id',
+        is_verified: false,
+        ended_at: null
+      }
+      let callCount = 0
+      mockFrom.mockImplementation(() => {
+        const chain = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
+        }
+        return chain
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        sessionId: 'test-session-id',
+        score: 100,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0,
+        durationMs: 500
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('durationMs must be between 1000 and 600000')
+    })
+
+    test('returns 400 when durationMs is too long', async () => {
+      const mockSession = {
+        id: 'test-session-id',
+        is_verified: false,
+        ended_at: null
+      }
+      let callCount = 0
+      mockFrom.mockImplementation(() => {
+        const chain = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
+        }
+        return chain
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        sessionId: 'test-session-id',
+        score: 100,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0,
+        durationMs: 700000
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('durationMs must be between 1000 and 600000')
+    })
+
+    test('returns 500 when update fails', async () => {
+      const mockSession = {
+        id: 'test-session-id',
+        is_verified: false,
+        ended_at: null
+      }
+      let callCount = 0
+      mockFrom.mockImplementation(() => {
+        const currentCall = callCount++
+        if (currentCall === 0) {
+          // First call: SELECT for session verification
+          return {
+            select: jest.fn(function() { return this }),
+            eq: jest.fn(function() { return this }),
+            maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
+          }
+        } else {
+          // Second call: UPDATE for score submission - returns error
+          const updateChain = {
+            update: jest.fn(function() { return updateChain }),
+            eq: jest.fn(function() { return updateChain }),
+            then: jest.fn((resolve) => resolve({ error: { message: 'Update failed' } }))
+          }
+          return updateChain
+        }
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'POST', '/api/leaderboard', {
+        sessionId: 'test-session-id',
+        score: 100,
+        speedMultiplier: 1.0,
+        scoreMultiplier: 1.0
+      }, { Cookie: 'session=valid-token' }, [mockAuthMiddleware])
+      expect(res.status).toBe(500)
+      expect(res.body.error).toBe('Failed to submit score')
+    })
   })
 })

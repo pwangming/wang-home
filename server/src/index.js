@@ -5,6 +5,7 @@ import session from 'koa-session'
 import { supabase } from './lib/supabase.js'
 import createAuthRouter from './routes/auth.js'
 import createLeaderboardRouter from './routes/leaderboard.js'
+import { securityHeadersMiddleware } from './middleware/securityHeaders.js'
 
 const app = new Koa()
 
@@ -29,6 +30,9 @@ const sessConfig = {
   secure: process.env.NODE_ENV === 'production'
 }
 app.use(session(sessConfig, app))
+
+// Security headers
+app.use(securityHeadersMiddleware())
 
 // CORS middleware
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',')

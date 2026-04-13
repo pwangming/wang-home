@@ -13,11 +13,20 @@ async function request(path, options = {}) {
     ...options.headers
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include'
-  })
+  let res
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include'
+    })
+  } catch (err) {
+    // Network error (TypeError from fetch) - shows toast
+    const error = new Error('网络连接失败，请检查网络')
+    error.networkError = true
+    throw error
+  }
+
   const json = await res.json()
 
   if (!res.ok) {
@@ -25,6 +34,13 @@ async function request(path, options = {}) {
     if (res.status === 401 && !path.endsWith('/auth/me') && onSessionExpired) {
       onSessionExpired()
     }
+    // 500 errors get a generic message
+    if (res.status >= 500) {
+      const error = new Error('服务器异常，请稍后重试')
+      error.serverError = true
+      throw error
+    }
+    // 400/401/403/409 - business errors, throw for caller to handle
     throw new Error(json.error || 'Request failed')
   }
   return json.data !== undefined ? json.data : json

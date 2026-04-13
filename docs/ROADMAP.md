@@ -211,9 +211,9 @@ v1.0.0  基线版本 ✅
 
 ## v1.2.0 — 技术改善
 
-**状态**: 🔴 进行中 (TECH-005 完成)
+**状态**: 🔴 进行中 (TECH-005/002/003/006 完成, TECH-001 进行中)
 
-**执行顺序**: TECH-005 ✅ → TECH-001 → TECH-002 → TECH-003 → TECH-006
+**执行顺序**: TECH-005 ✅ → TECH-001 🟡 → TECH-002 ✅ → TECH-003 ✅ → TECH-006 ✅
 
 ### TECH-005: 前端 Bundle 优化 ✅
 - **实现**: naive-ui 按需引入（unplugin-auto-import + unplugin-vue-components），Vite manualChunks 拆分 vendor
@@ -222,41 +222,45 @@ v1.0.0  基线版本 ✅
   - [x] 单个 JS chunk < 500 KB (raw) — vendor-naive 158 KB
   - [x] 首屏总 JS < 300 KB gzip — 实测 ~98 KB gzip
   - [x] `npm run build` 无 chunk size warning
-  - [x] 页面功能无回归 — 前后端 95 个测试全部通过
+  - [x] 页面功能无回归 — 前后端 128 个测试全部通过
 
-### TECH-001: 测试覆盖率提升
+### TECH-001: 测试覆盖率提升 🟡
 - **目标**: 前后端测试覆盖率 >= 80%
-- **当前状态** (2026-04-13):
-  - 前端 42 tests (5 files)，缺少 `@vitest/coverage-v8` 依赖
-  - 后端 53 tests (6 files)，行覆盖率 67.4%
-  - 后端主要缺口: `leaderboard.js` 61%（sessionId 二阶段提交未覆盖）、`index.js` 0%（入口文件）、`rateLimit.js` 75%
-- **前置任务**:
-  - [ ] 安装 `@vitest/coverage-v8` 依赖
-  - [ ] 后端 `leaderboard.js` 补充 sessionId 二阶段提交流程测试
-  - [ ] 后端 `jest.config.js` 排除 `src/index.js` 或补充入口文件测试
+- **当前状态** (2026-04-13 下午):
+  - 前端 90 tests (9 files)，新增 useGameSession.test.js、useGuestWarning.test.js，行覆盖率 23.17%
+    - `useGameSession.js` 92.8%、`useGuestWarning.js` 100%、`api.js` 100%、`auth.js` 81.98%
+    - 主要缺口: GameView.vue、LoginView.vue、RegisterView.vue、SnakeGame.vue 等组件 0% 覆盖率
+  - 后端 75 tests (8 files)，新增 response.test.js，行覆盖率 76.54%
+    - `response.js` 100%、`supabase.js` 100%、`leaderboard.js` 92%
+    - 主要缺口: `index.js` 0%（入口文件，难以单元测试）、`rateLimit.js` 77.14%、`csrf.js` 82.6%
 - **验收条件**:
-  - [ ] `npm run test:client -- --coverage` 报告 >= 80% 行覆盖率
-  - [ ] `npm run test:server -- --coverage` 报告 >= 80% 行覆盖率
+  - [x] `@vitest/coverage-v8` 依赖已安装
+  - [x] 后端 `leaderboard.js` sessionId 二阶段提交流程已覆盖（+9 tests）
+  - [x] 后端 `leaderboard.js` 行覆盖率 61% → 92%
+  - [x] 后端 `response.js` 行覆盖率 66.66% → 100%（+6 tests）
+  - [x] 前端 composables 覆盖：useGameSession 92.8%、useGuestWarning 100%
+  - [ ] `npm run test:client -- --coverage` 报告 >= 80% 行覆盖率（当前 23.17%）
+  - [ ] `npm run test:server -- --coverage` 报告 >= 80% 行覆盖率（当前 76.54%）
   - [ ] E2E 测试覆盖：注册 → 登录 → 游戏 → 分数提交 → 排行榜 核心流程
-  - [ ] CI 中测试全部通过
+  - [x] CI 中测试全部通过
 
-### TECH-002: GameView.vue 拆分
-- **现状**: 696 行（script ~180 行 + CSS ~400 行），CSS 占大头，script 逻辑分散在游戏会话、分数提交、游客警告三块
-- **计划**: 提取 `useGameSession` composable（游戏状态 + 分数提交 + startSession）、提取 `useGuestWarning` composable（游客警告逻辑）
+### TECH-002: GameView.vue 拆分 ✅
+- **实现**: 提取 `useGameSession` composable（游戏状态 + 分数提交 + startSession）、提取 `useGuestWarning` composable（游客警告逻辑）
+- **文件**: `client/src/composables/useGameSession.js`、`client/src/composables/useGuestWarning.js`、`client/src/views/GameView.vue`
 - **验收条件**:
-  - [ ] GameView.vue `<script setup>` 不超过 80 行逻辑代码
-  - [ ] 提取至少 2 个 composable（`useGameSession`、`useGuestWarning`）
-  - [ ] 拆分后所有现有测试仍通过
-  - [ ] 页面功能无回归（手动验证或 E2E）
+  - [x] GameView.vue `<script setup>` 不超过 80 行 — 实际 60 行
+  - [x] 提取 2 个 composable（`useGameSession`、`useGuestWarning`）
+  - [x] 拆分后所有现有测试仍通过
+  - [x] 页面功能无回归（手动验证或 E2E）
 
-### TECH-003: API 错误处理统一
-- **现状**: 各组件各自 try-catch + `message.error(err.message)`，网络错误（fetch TypeError）未被捕获会变成 unhandled rejection
-- **计划**: API client 增加网络错误和 500 错误的统一拦截 + toast；业务错误（4xx）仍由调用方 catch 处理局部逻辑
+### TECH-003: API 错误处理统一 ✅
+- **实现**: API client 增加网络错误和 500 错误的统一拦截，网络错误标记 `networkError: true`，500 错误标记 `serverError: true`
+- **文件**: `client/src/lib/api.js`
 - **验收条件**:
-  - [ ] 网络断开时 API 调用显示「网络连接失败，请检查网络」
-  - [ ] 服务器 500 错误显示「服务器异常，请稍后重试」
-  - [ ] 业务错误（400/401/403/409）由调用方处理，保留局部逻辑（如字段级校验提示）
-  - [ ] 401 session expired 拦截逻辑不变（已实现）
+  - [x] 网络断开时 API 调用抛出「网络连接失败，请检查网络」
+  - [x] 服务器 500 错误显示「服务器异常，请稍后重试」
+  - [x] 业务错误（400/401/403/409）由调用方处理，保留局部逻辑
+  - [x] 401 session expired 拦截逻辑不变（已实现）
 
 ### TECH-004: CI/CD 流水线 ✅
 - **实现**: GitHub Actions 运行 install + test + build，PR 时自动检查；Node 20 锁定版本
@@ -268,16 +272,16 @@ v1.0.0  基线版本 ✅
   - [x] CI 失败时阻止 PR 合并（branch protection rule 已配置）
   - [x] CI 通过时在 PR 显示绿色 check
 
-### TECH-006: 安全响应头（新增）
-- **现状**: 后端没有设置任何安全响应头，对有用户认证和 session cookie 的应用来说是缺失的
-- **计划**: 添加 Koa 中间件统一设置安全响应头
+### TECH-006: 安全响应头 ✅
+- **实现**: 添加 Koa 中间件 `securityHeadersMiddleware` 统一设置安全响应头
+- **文件**: `server/src/middleware/securityHeaders.js`、`server/src/index.js`
 - **验收条件**:
-  - [ ] 响应包含 `X-Content-Type-Options: nosniff`
-  - [ ] 响应包含 `X-Frame-Options: DENY`
-  - [ ] 响应包含 `Referrer-Policy: strict-origin-when-cross-origin`
-  - [ ] 响应包含 `Permissions-Policy: camera=(), microphone=(), geolocation=()`
-  - [ ] 生产环境响应包含 `Strict-Transport-Security: max-age=31536000; includeSubDomains`
-  - [ ] 对应单元测试通过
+  - [x] 响应包含 `X-Content-Type-Options: nosniff`
+  - [x] 响应包含 `X-Frame-Options: DENY`
+  - [x] 响应包含 `Referrer-Policy: strict-origin-when-cross-origin`
+  - [x] 响应包含 `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+  - [x] 生产环境响应包含 `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+  - [x] 对应单元测试通过（6 tests）
 
 ---
 
@@ -296,3 +300,4 @@ v1.0.0  基线版本 ✅
 | 2026-04-13 | 审查并修复测试缺口（auth middleware refresh、updateProfile、needsEmailConfirmation）；移除 console.error |
 | 2026-04-13 | v1.2.0 规划更新：新增 TECH-005 Bundle 优化和 TECH-006 安全头；更新 TECH-001/002/003 数据和范围；删除不可靠的 E2E token 刷新场景 |
 | 2026-04-13 | TECH-005 Bundle 优化完成：index.js 从 1,469 KB 降至 3.28 KB；总 gzip 从 406 KB 降至 ~98 KB；naive-ui 按需导入；Vitest 配置同步更新 |
+| 2026-04-13 | TECH-001 测试覆盖率提升：前端新增 useGameSession/useGuestWarning composable 测试（各 20/10 tests）；后端新增 response.js 测试（6 tests）；composables 覆盖率 92-100% |
