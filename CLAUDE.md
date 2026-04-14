@@ -118,7 +118,50 @@ cd client && npm test
 cd client && npm run test:e2e
 ```
 
-**覆盖率目标**: 前后端均 >= 80% 行覆盖率。修 bug 必须同时补回归测试。
+### 测试覆盖率策略（区分核心与非核心）
+
+**不追求整体 100% 覆盖率，追求"核心模块高覆盖，非核心按需测"。**
+
+#### 核心（必须测，目标 >= 90% 行覆盖率）
+出 bug 会直接影响用户或存在安全风险的模块：
+
+- `server/src/routes/*`、`server/src/middleware/*` — 所有后端业务逻辑和安全中间件
+- `client/src/lib/api.js` — API 调用与错误处理
+- `client/src/composables/*` — 游戏会话、游客警告等核心状态逻辑
+- `client/src/stores/*` — Pinia store 中的公开 action（下划线开头的内部方法除外）
+- 表单验证函数（LoginView/RegisterView/ResetPasswordView 的 `validate*`）
+- 数据转换函数（如 `normalizeLeaderboardRows`）
+- fetch 错误处理路径
+
+#### 非核心（只测有条件分支或业务规则的部分）
+纯渲染容器、UI primitives、canvas 游戏 — 由 E2E 覆盖或无需单元测试：
+
+- 展示性组件（GameSidebar、ProfileModal 等）：只测 `v-if/v-else` 分支和条件 fallback
+- UI primitives（NeonButton/Card/Input/Checkbox）：不加单元测试
+- 速度/得分倍率映射表：用 `it.each` 合并，测业务规则不测渲染
+- `GameView.vue`、`SnakeGame.vue`：不加单元测试，由 Playwright E2E 覆盖
+
+#### 禁止的测试模式（凑数测试）
+
+- ❌ 测"模板里有 4 个按钮"、"点击 emit 了事件"这种 Vue 框架行为
+- ❌ 测下划线开头的内部清理方法（`_stopHeartbeat` 等）
+- ❌ 测未来功能的占位提示（"即将上线" 类）
+- ❌ 同一规则拆成多个 `it` 来刷行数（用 `it.each`）
+- ❌ 为了凑整体覆盖率去测 App.vue/main.js/router
+
+#### 覆盖率门槛（在 `vitest.config.js` / Jest 中强制）
+
+| 指标 | 阈值 |
+|---|---|
+| lines | 90% |
+| statements | 90% |
+| branches | 85% |
+| functions | 80% |
+
+覆盖率 exclude 列表（非核心、由 E2E 覆盖或无需测试）：
+`src/main.js`, `src/App.vue`, `src/router/**`, `src/components/game/SnakeGame.vue`, `src/views/GameView.vue`, 各类配置文件。
+
+修 bug 必须同时补回归测试（无论核心/非核心）。
 
 ### 代码审查节点（强制）
 

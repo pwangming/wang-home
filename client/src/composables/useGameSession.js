@@ -55,6 +55,7 @@ export function useGameSession({ onScoreSubmitted } = {}) {
       return
     }
 
+    clearSubmitStatus()
     submitStatus.value = 'submitting'
     submitMessage.value = '分数提交中...'
 
@@ -62,7 +63,7 @@ export function useGameSession({ onScoreSubmitted } = {}) {
       await api.leaderboard.submitScore(null, finalScore, speedMult, scoreMult, new Date().toISOString(), null)
       submitStatus.value = 'success'
       submitMessage.value = '分数提交成功'
-      fetchBestScore()
+      await fetchBestScore()
       if (onScoreSubmitted) {
         onScoreSubmitted()
       }

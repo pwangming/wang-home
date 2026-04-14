@@ -27,7 +27,17 @@ async function request(path, options = {}) {
     throw error
   }
 
-  const json = await res.json()
+  let json
+  try {
+    json = await res.json()
+  } catch {
+    if (res.status >= 500) {
+      const error = new Error('服务器异常，请稍后重试')
+      error.serverError = true
+      throw error
+    }
+    throw new Error('服务器返回了无效的响应')
+  }
 
   if (!res.ok) {
     // If 401 and not already on the /auth/me endpoint, notify session expired

@@ -11,6 +11,9 @@ function createLeaderboardRouter() {
   // Valid speed multipliers
   const VALID_SPEED_MULTIPLIERS = [1.0, 1.2, 1.5, 2.0]
 
+  // Max score for direct submission (no session): ~20 food * 3.0x max multiplier * 100 base
+  const MAX_DIRECT_SUBMIT_SCORE = 6000
+
   // Score multiplier mapping
   const SCORE_MULTIPLIER_MAP = {
     1.0: 1.0,
@@ -167,9 +170,7 @@ function createLeaderboardRouter() {
 
       // No sessionId - direct score submission (legacy single-phase)
       // Basic sanity check: max score per second should be reasonable
-      const maxReasonableScore = 6000
-
-      if (score > maxReasonableScore) {
+      if (score > MAX_DIRECT_SUBMIT_SCORE) {
         fail(ctx, 400, 'Score exceeds reasonable limit')
         return
       }

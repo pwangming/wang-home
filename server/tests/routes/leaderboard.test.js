@@ -127,6 +127,37 @@ describe('Leaderboard Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.data.leaderboard).toEqual([])
     })
+
+    test('verifies correct sort order fields', async () => {
+      const mockOrder = jest.fn().mockReturnThis()
+      const mockRange = jest.fn().mockResolvedValue({ data: [], error: null })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        order: mockOrder,
+        range: mockRange
+      })
+
+      app = leaderboardRouter()
+      await simulateRequest(app, 'GET', '/api/leaderboard?page=1&pageSize=20')
+
+      expect(mockOrder).toHaveBeenCalledTimes(3)
+      expect(mockOrder).toHaveBeenNthCalledWith(1, 'best_score', { ascending: false })
+      expect(mockOrder).toHaveBeenNthCalledWith(2, 'best_score_at', { ascending: true })
+      expect(mockOrder).toHaveBeenNthCalledWith(3, 'user_id', { ascending: true })
+    })
+
+    test('returns 500 when database query fails', async () => {
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: null, error: { message: 'DB error' } })
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard?page=1&pageSize=20')
+      expect(res.status).toBe(500)
+      expect(res.body.error).toBe('Failed to fetch leaderboard')
+    })
   })
 
   // ========== GET /api/leaderboard/rank/me ==========
@@ -150,6 +181,21 @@ describe('Leaderboard Routes', () => {
       }, [mockAuthMiddleware])
       expect(res.status).toBe(200)
       expect(res.body.data.rank).toBeNull()
+    })
+
+    test('returns 500 when database query fails', async () => {
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: { message: 'DB error' } })
+      })
+
+      app = leaderboardRouter()
+      const res = await simulateRequest(app, 'GET', '/api/leaderboard/rank/me', null, {
+        Cookie: 'session=valid-token'
+      }, [mockAuthMiddleware])
+      expect(res.status).toBe(500)
+      expect(res.body.error).toBe('Failed to fetch rank')
     })
 
     test('returns rank when user has score', async () => {
@@ -312,12 +358,18 @@ describe('Leaderboard Routes', () => {
             maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
           }
         } else {
-          // Second call: UPDATE for score submission
-          // The last .eq() needs to return a Promise-like object
+          // Second call: UPDATE chain — .from().update().eq().eq()
+          // The second .eq() is the terminal call that returns the result
+          let eqCallCount = 0
           const updateChain = {
-            update: jest.fn(function() { return updateChain }),
-            eq: jest.fn(function() { return updateChain }),
-            then: jest.fn((resolve) => resolve({ error: null }))
+            update: jest.fn(() => updateChain),
+            eq: jest.fn(() => {
+              eqCallCount++
+              if (eqCallCount >= 2) {
+                return Promise.resolve({ error: null })
+              }
+              return updateChain
+            })
           }
           return updateChain
         }
@@ -382,7 +434,6 @@ describe('Leaderboard Routes', () => {
         is_verified: false,
         ended_at: null
       }
-      let callCount = 0
       mockFrom.mockImplementation(() => {
         const chain = {
           select: jest.fn().mockReturnThis(),
@@ -410,7 +461,6 @@ describe('Leaderboard Routes', () => {
         is_verified: false,
         ended_at: null
       }
-      let callCount = 0
       mockFrom.mockImplementation(() => {
         const chain = {
           select: jest.fn().mockReturnThis(),
@@ -449,11 +499,17 @@ describe('Leaderboard Routes', () => {
             maybeSingle: jest.fn().mockResolvedValue({ data: mockSession, error: null })
           }
         } else {
-          // Second call: UPDATE for score submission - returns error
+          // Second call: UPDATE chain — .from().update().eq().eq()
+          let eqCallCount = 0
           const updateChain = {
-            update: jest.fn(function() { return updateChain }),
-            eq: jest.fn(function() { return updateChain }),
-            then: jest.fn((resolve) => resolve({ error: { message: 'Update failed' } }))
+            update: jest.fn(() => updateChain),
+            eq: jest.fn(() => {
+              eqCallCount++
+              if (eqCallCount >= 2) {
+                return Promise.resolve({ error: { message: 'Update failed' } })
+              }
+              return updateChain
+            })
           }
           return updateChain
         }

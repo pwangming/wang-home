@@ -39,4 +39,22 @@ describe('CSRF middleware', () => {
     await middleware(ctx, noop)
     expect(ctx.status).toBe(403)
   })
+
+  it('blocks POST with invalid origin URL', async () => {
+    const ctx = createMockCtx('POST', 'not-a-valid-url')
+    await middleware(ctx, noop)
+    expect(ctx.status).toBe(403)
+    expect(ctx.body.error).toBe('CSRF validation failed: invalid origin')
+  })
+
+  it('uses referer header when origin is missing', async () => {
+    const ctx = {
+      method: 'POST',
+      headers: { referer: 'http://localhost:3000/some-page' },
+      status: 200,
+      body: null
+    }
+    await middleware(ctx, noop)
+    expect(ctx.status).toBe(200)
+  })
 })

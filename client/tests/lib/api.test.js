@@ -68,6 +68,26 @@ describe('api.js', () => {
       await expect(api.auth.me()).rejects.toThrow('网络连接失败，请检查网络')
     })
 
+    it('should throw server error when 502 returns non-JSON', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: async () => { throw new SyntaxError('Unexpected token <') }
+      })
+
+      await expect(api.auth.me()).rejects.toThrow('服务器异常，请稍后重试')
+    })
+
+    it('should throw invalid response error when non-500 returns non-JSON', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => { throw new SyntaxError('Unexpected token <') }
+      })
+
+      await expect(api.auth.me()).rejects.toThrow('服务器返回了无效的响应')
+    })
+
     it('should mark network errors with networkError flag', async () => {
       mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'))
 
