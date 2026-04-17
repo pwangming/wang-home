@@ -15,7 +15,12 @@
     "build": "npm run build --workspace=client",
     "test:client": "npm run test --workspace=client",
     "test:server": "npm run test --workspace=server",
-    "test": "npm run test:client && npm run test:server"
+    "test": "npm run test:client && npm run test:server",
+    "test:e2e": "npm run test:e2e --workspace=client",
+    "lint:client": "npm run lint --workspace=client",
+    "lint:server": "npm run lint --workspace=server",
+    "lint": "npm run lint:client && npm run lint:server",
+    "audit": "npm audit --audit-level=high"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",

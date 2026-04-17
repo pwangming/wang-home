@@ -8,7 +8,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "lint": "eslint \"src/**/*.{js,vue}\" \"tests/**/*.js\"",
+    "lint:fix": "eslint --fix \"src/**/*.{js,vue}\" \"tests/**/*.js\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
@@ -19,14 +22,19 @@
     "vue-router": "^4.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.40.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "@vitest/coverage-v8": "^1.6.1",
     "@vue/test-utils": "^2.4.0",
+    "eslint": "^10.2.0",
+    "eslint-plugin-vue": "^10.8.0",
+    "globals": "^17.5.0",
     "jsdom": "^24.0.0",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.0.0",
     "vite": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "vue-eslint-parser": "^10.4.0"
   }
 }
