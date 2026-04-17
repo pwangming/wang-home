@@ -1,11 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, isRef } from 'vue'
 import { useMessage } from 'naive-ui'
 import { useAuthStore } from '../stores/auth.js'
 import { api } from '../lib/api.js'
 
 const SPEED_SCORE_MAP = { 1.0: 1.0, 1.2: 1.5, 1.5: 2.0, 2.0: 3.0 }
 
-export function useGameSession({ onScoreSubmitted } = {}) {
+export function useGameSession({ snakeGameRef, onScoreSubmitted } = {}) {
   const message = useMessage()
   const authStore = useAuthStore()
 
@@ -18,7 +18,6 @@ export function useGameSession({ onScoreSubmitted } = {}) {
   const submitMessage = ref('')
 
   let submitStatusTimer = null
-  let snakeGameRef = null
 
   const currentScoreMultiplier = computed(() => SPEED_SCORE_MAP[selectedSpeed.value] || 1.0)
 
@@ -28,8 +27,8 @@ export function useGameSession({ onScoreSubmitted } = {}) {
     return VALID_SPEEDS.includes(saved) ? saved : 1.0
   }
 
-  function setSnakeGameRef(ref) {
-    snakeGameRef = ref
+  function resolveSnakeGame() {
+    return isRef(snakeGameRef) ? snakeGameRef.value : snakeGameRef
   }
 
   async function startGame() {
@@ -42,7 +41,8 @@ export function useGameSession({ onScoreSubmitted } = {}) {
     }
     isPlaying.value = true
     currentScore.value = 0
-    snakeGameRef?.startGame()
+    await nextTick()
+    resolveSnakeGame()?.startGame()
   }
 
   async function handleGameOver(finalScore, speedMult, scoreMult) {
@@ -104,7 +104,7 @@ export function useGameSession({ onScoreSubmitted } = {}) {
 
   function playAgain() {
     lastGameScore.value = null
-    startGame()
+    return startGame()
   }
 
   return {
@@ -116,7 +116,6 @@ export function useGameSession({ onScoreSubmitted } = {}) {
     submitStatus,
     submitMessage,
     currentScoreMultiplier,
-    setSnakeGameRef,
     startGame,
     handleGameOver,
     fetchBestScore,

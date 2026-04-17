@@ -127,20 +127,19 @@ const message = useMessage()
 const { soundEnabled, toggle: soundToggle, playEat: playEatSound } = useSound()
 const { showGuestWarning, checkGuestWarning, continueAsGuest, goToLogin } = useGuestWarning()
 
-const {
-  isPlaying, currentScore, lastGameScore, selectedSpeed, bestScore,
-  submitStatus, submitMessage, currentScoreMultiplier, setSnakeGameRef,
-  startGame, handleGameOver, fetchBestScore, playAgain
-} = useGameSession()
-
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
 const showProfileModal = ref(false)
 let prevHtmlOverflow = ''
 let prevBodyOverflow = ''
 
+const {
+  isPlaying, currentScore, lastGameScore, selectedSpeed, bestScore,
+  submitStatus, submitMessage, currentScoreMultiplier,
+  startGame, handleGameOver, fetchBestScore, playAgain
+} = useGameSession({ snakeGameRef })
+
 watch(selectedSpeed, (val) => localStorage.setItem('preferredSpeed', val))
-watch(snakeGameRef, (val) => val && setSnakeGameRef(val))
 
 const handleLogout = () => authStore.logout().then(() => message.success('已退出登录'))
 const handleUsernameUpdated = (newUsername) => authStore.updateProfile(newUsername).then(() => message.success('用户名已更新'))
