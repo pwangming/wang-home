@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { ref, nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 
 // Mock api
@@ -129,8 +130,7 @@ describe('useGameSession', () => {
     it('should start game when not authenticated', async () => {
       useAuthStore.mockReturnValue({ user: null })
 
-      const { isPlaying, startGame, setSnakeGameRef } = useGameSession()
-      setSnakeGameRef(mockSnakeGame)
+      const { isPlaying, startGame } = useGameSession({ snakeGameRef: mockSnakeGame })
 
       await startGame()
 
@@ -143,8 +143,7 @@ describe('useGameSession', () => {
       useAuthStore.mockReturnValue({ user: { id: '123' } })
       api.leaderboard.startSession.mockResolvedValue({})
 
-      const { isPlaying, startGame, setSnakeGameRef, selectedSpeed } = useGameSession()
-      setSnakeGameRef(mockSnakeGame)
+      const { isPlaying, startGame, selectedSpeed } = useGameSession({ snakeGameRef: mockSnakeGame })
 
       await startGame()
 
@@ -156,12 +155,28 @@ describe('useGameSession', () => {
       useAuthStore.mockReturnValue({ user: { id: '123' } })
       api.leaderboard.startSession.mockRejectedValue(new Error('Network error'))
 
-      const { isPlaying, startGame, setSnakeGameRef } = useGameSession()
-      setSnakeGameRef(mockSnakeGame)
+      const { isPlaying, startGame } = useGameSession({ snakeGameRef: mockSnakeGame })
 
       await startGame()
 
       expect(isPlaying.value).toBe(true)
+    })
+
+    // Regression: prod bug where startGame fired before <SnakeGame v-if="isPlaying"> mounted,
+    // leaving the snake/food unrendered. The composable must wait for the ref to populate.
+    it('should invoke startGame after nextTick, even if ref is null at call time', async () => {
+      useAuthStore.mockReturnValue({ user: null })
+      const snakeGameRef = ref(null)
+
+      const { startGame } = useGameSession({ snakeGameRef })
+
+      // Kick off startGame while ref is still null (mirrors real mount timing).
+      const p = startGame()
+      // Populate ref before nextTick resolves — simulates Vue mounting <SnakeGame> after isPlaying flips.
+      snakeGameRef.value = mockSnakeGame
+      await p
+
+      expect(mockSnakeGame.startGame).toHaveBeenCalled()
     })
   })
 
@@ -325,9 +340,8 @@ describe('useGameSession', () => {
     it('should reset lastGameScore and start new game', async () => {
       useAuthStore.mockReturnValue({ user: null })
 
-      const { lastGameScore, playAgain, setSnakeGameRef } = useGameSession()
+      const { lastGameScore, playAgain } = useGameSession({ snakeGameRef: mockSnakeGame })
       lastGameScore.value = 100
-      setSnakeGameRef(mockSnakeGame)
 
       await playAgain()
 
