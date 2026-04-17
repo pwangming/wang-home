@@ -47,7 +47,7 @@ jobs:
         run: npm run test:coverage --workspace=client
       - name: Upload client coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: client-coverage
           path: client/coverage
@@ -69,7 +69,7 @@ jobs:
         run: npm run test:coverage --workspace=server
       - name: Upload server coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-coverage
           path: server/coverage
@@ -91,7 +91,7 @@ jobs:
       - name: Build
         run: npm run build
       - name: Upload dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: client-dist
           path: client/dist
