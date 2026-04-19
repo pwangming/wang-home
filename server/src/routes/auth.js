@@ -67,7 +67,7 @@ function createAuthRouter() {
         ctx.session.userId = data.user.id
       }
 
-      ok(ctx, { user: { id: data.user.id, email: data.user.email } })
+      ok(ctx, { user: { id: data.user.id, email: data.user.email, username: profile.username } })
     }
   )
 
@@ -100,7 +100,14 @@ function createAuthRouter() {
         ctx.session.userId = data.user.id
       }
 
-      ok(ctx, { user: { id: data.user.id, email: data.user.email } })
+      const userScopedClient = createUserScopedClient(data.session.access_token)
+      const { data: profileData } = await userScopedClient
+        .from('profiles')
+        .select('username')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      ok(ctx, { user: { id: data.user.id, email: data.user.email, username: profileData?.username || null } })
     }
   )
 
