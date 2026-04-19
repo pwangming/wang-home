@@ -71,6 +71,14 @@ export function createRegisterRateLimiter() {
   })
 }
 
+export function createCallbackRateLimiter() {
+  return createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 10,
+    keyGenerator: (ctx) => `callback:${ctx.ip}`
+  })
+}
+
 export function createLeaderboardRateLimiter() {
   return createRateLimiter({
     windowMs: 60 * 1000,

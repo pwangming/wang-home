@@ -69,7 +69,9 @@ export const api = {
     resetConfirm: (token, password) =>
       request('/auth/reset-confirm', { method: 'POST', body: JSON.stringify({ token, password }) }),
     updateProfile: (username) =>
-      request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ username }) })
+      request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ username }) }),
+    callback: (accessToken, refreshToken) =>
+      request('/auth/callback', { method: 'POST', body: JSON.stringify({ accessToken, refreshToken }) })
   },
   leaderboard: {
     list: (page = 1, pageSize = 20) =>

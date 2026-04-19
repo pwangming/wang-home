@@ -129,6 +129,7 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(res.body.data.user.id).toBe('123')
+      expect(res.body.data.user.username).toBe('test')
       expect(mockFrom).toHaveBeenCalledWith('profiles')
     })
 
@@ -200,12 +201,20 @@ describe('Auth Routes', () => {
       expect(res.body.error).toBe('Invalid login credentials')
     })
 
-    test('returns 200 and sets session cookie on success', async () => {
+    test('returns 200 and includes username in response on success', async () => {
       const mockUser = { id: '123', email: 'test@test.com' }
       const mockSession = { access_token: 'mock-token', refresh_token: 'mock-refresh' }
       mockAuth.signInWithPassword.mockResolvedValue({
         data: { user: mockUser, session: mockSession },
         error: null
+      })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { username: 'testuser' },
+          error: null
+        })
       })
 
       const res = await simulateRequest(app, 'POST', '/api/auth/login', {
@@ -214,6 +223,27 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(res.body.data.user.email).toBe('test@test.com')
+      expect(res.body.data.user.username).toBe('testuser')
+    })
+
+    test('returns username as null when profile not found on login', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      const mockSession = { access_token: 'mock-token', refresh_token: 'mock-refresh' }
+      mockAuth.signInWithPassword.mockResolvedValue({
+        data: { user: mockUser, session: mockSession },
+        error: null
+      })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      })
+
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', {
+        email: 'test@test.com', password: '123456'
+      })
+      expect(res.status).toBe(200)
+      expect(res.body.data.user.username).toBeNull()
     })
   })
 
@@ -375,6 +405,53 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(res.body.data.username).toBe('validname')
+    })
+  })
+
+  // ========== /api/auth/callback ==========
+  describe('POST /api/auth/callback', () => {
+    test('returns 400 when accessToken is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', {})
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('accessToken required')
+    })
+
+    test('returns 401 when Supabase returns invalid token', async () => {
+      mockAuth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('Invalid token') })
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', { accessToken: 'bad-token' })
+      expect(res.status).toBe(401)
+      expect(res.body.error).toBe('Invalid token')
+    })
+
+    test('returns 200 with user and username on valid token', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { username: 'testuser' }, error: null })
+      })
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', {
+        accessToken: 'valid-token',
+        refreshToken: 'valid-refresh'
+      })
+      expect(res.status).toBe(200)
+      expect(res.body.data.user.id).toBe('123')
+      expect(res.body.data.user.email).toBe('test@test.com')
+      expect(res.body.data.user.username).toBe('testuser')
+    })
+
+    test('returns username as null when profile not found', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      })
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', { accessToken: 'valid-token' })
+      expect(res.status).toBe(200)
+      expect(res.body.data.user.username).toBeNull()
     })
   })
 

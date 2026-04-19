@@ -120,12 +120,15 @@ import { useAuthStore } from '../stores/auth.js'
 import { useSound } from '../composables/useSound.js'
 import { useGuestWarning } from '../composables/useGuestWarning.js'
 import { useGameSession } from '../composables/useGameSession.js'
+import { useAuthCallback } from '../composables/useAuthCallback.js'
+import { api } from '../lib/api.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
 const { soundEnabled, toggle: soundToggle, playEat: playEatSound } = useSound()
 const { showGuestWarning, checkGuestWarning, continueAsGuest, goToLogin } = useGuestWarning()
+const { handleCallback } = useAuthCallback({ api, authStore, router, message })
 
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
@@ -153,6 +156,7 @@ onMounted(async () => {
   body.classList.add('game-page-overflow-lock')
   html.style.overflow = 'hidden'
   body.style.overflow = 'hidden'
+  await handleCallback()
   await authStore.init()
   fetchBestScore()
   checkGuestWarning()
