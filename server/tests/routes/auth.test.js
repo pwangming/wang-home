@@ -408,6 +408,53 @@ describe('Auth Routes', () => {
     })
   })
 
+  // ========== /api/auth/callback ==========
+  describe('POST /api/auth/callback', () => {
+    test('returns 400 when accessToken is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', {})
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('accessToken required')
+    })
+
+    test('returns 401 when Supabase returns invalid token', async () => {
+      mockAuth.getUser.mockResolvedValue({ data: { user: null }, error: new Error('Invalid token') })
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', { accessToken: 'bad-token' })
+      expect(res.status).toBe(401)
+      expect(res.body.error).toBe('Invalid token')
+    })
+
+    test('returns 200 with user and username on valid token', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { username: 'testuser' }, error: null })
+      })
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', {
+        accessToken: 'valid-token',
+        refreshToken: 'valid-refresh'
+      })
+      expect(res.status).toBe(200)
+      expect(res.body.data.user.id).toBe('123')
+      expect(res.body.data.user.email).toBe('test@test.com')
+      expect(res.body.data.user.username).toBe('testuser')
+    })
+
+    test('returns username as null when profile not found', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      mockAuth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      })
+      const res = await simulateRequest(app, 'POST', '/api/auth/callback', { accessToken: 'valid-token' })
+      expect(res.status).toBe(200)
+      expect(res.body.data.user.username).toBeNull()
+    })
+  })
+
   // ========== /api/auth/logout ==========
   describe('POST /api/auth/logout', () => {
     test('always returns 200 (client clears local state)', async () => {

@@ -1,7 +1,7 @@
 import Router from 'koa-router'
 import { supabase } from '../lib/supabase.js'
 import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
-import { createLoginRateLimiter, createRegisterRateLimiter } from '../middleware/rateLimit.js'
+import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 import { ok, fail } from '../lib/response.js'
 
@@ -211,6 +211,40 @@ function createAuthRouter() {
     }
 
     ok(ctx, { username: normalizedUsername })
+  })
+
+  // POST /callback
+  // Exchanges a Supabase access token (from magic link hash) for a Koa session.
+  // Client calls this after reading the token from window.location.hash on email confirmation.
+  router.post('/callback', createCsrfMiddleware(), createCallbackRateLimiter(), async (ctx) => {
+    const { accessToken, refreshToken } = ctx.request.body
+
+    if (!accessToken) {
+      fail(ctx, 400, 'accessToken required')
+      return
+    }
+
+    const { data, error } = await supabase.auth.getUser(accessToken)
+    if (error || !data.user) {
+      fail(ctx, 401, 'Invalid token')
+      return
+    }
+
+    // Destroy existing session then create fresh one (session fixation prevention)
+    ctx.session = null
+    ctx.session = {}
+    ctx.session.supabaseAccessToken = accessToken
+    ctx.session.supabaseRefreshToken = refreshToken || null
+    ctx.session.userId = data.user.id
+
+    const userScopedClient = createUserScopedClient(accessToken)
+    const { data: profile } = await userScopedClient
+      .from('profiles')
+      .select('username')
+      .eq('id', data.user.id)
+      .maybeSingle()
+
+    ok(ctx, { user: { id: data.user.id, email: data.user.email, username: profile?.username || null } })
   })
 
   // POST /logout
