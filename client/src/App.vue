@@ -7,4 +7,5 @@
 </template>
 
 <script setup>
+import { darkTheme } from 'naive-ui'
 </script>
