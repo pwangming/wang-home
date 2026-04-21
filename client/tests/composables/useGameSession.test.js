@@ -349,4 +349,28 @@ describe('useGameSession', () => {
       expect(mockSnakeGame.startGame).toHaveBeenCalled()
     })
   })
+
+  describe('updateScore()', () => {
+    it('updates currentScore to given value', () => {
+      const { currentScore, updateScore } = useGameSession()
+      updateScore(42)
+      expect(currentScore.value).toBe(42)
+    })
+
+    it('reflects latest value on multiple calls', () => {
+      const { currentScore, updateScore } = useGameSession()
+      updateScore(5)
+      updateScore(10)
+      updateScore(7)
+      expect(currentScore.value).toBe(7)
+    })
+
+    it('remains effective after startGame', () => {
+      useAuthStore.mockReturnValue({ user: null })
+      const { currentScore, startGame, updateScore } = useGameSession({ snakeGameRef: mockSnakeGame })
+      startGame()
+      updateScore(15)
+      expect(currentScore.value).toBe(15)
+    })
+  })
 })
