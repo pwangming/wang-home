@@ -60,6 +60,7 @@
               :score-multiplier="currentScoreMultiplier"
               @game-over="handleGameOver"
               @eat-food="playEatSound"
+              @score-update="updateScore"
             />
           </div>
         </div>
@@ -139,7 +140,7 @@ let prevBodyOverflow = ''
 const {
   isPlaying, currentScore, lastGameScore, selectedSpeed, bestScore,
   submitStatus, submitMessage, currentScoreMultiplier,
-  startGame, handleGameOver, fetchBestScore, playAgain
+  startGame, handleGameOver, fetchBestScore, playAgain, updateScore
 } = useGameSession({ snakeGameRef })
 
 watch(selectedSpeed, (val) => localStorage.setItem('preferredSpeed', val))
