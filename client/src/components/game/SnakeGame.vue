@@ -28,7 +28,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['gameOver', 'eatFood'])
+const emit = defineEmits(['gameOver', 'eatFood', 'scoreUpdate'])
 
 // Canvas setup
 const canvasRef = ref(null)
@@ -291,6 +291,9 @@ defineExpose({
   stopGame,
   togglePause
 })
+
+// Watch for score changes and emit to parent
+watch(score, (v) => emit('scoreUpdate', v))
 
 // Watch for speed changes during game
 watch(() => props.speedMultiplier, () => {

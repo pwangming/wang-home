@@ -94,6 +94,10 @@ export function useGameSession({ snakeGameRef, onScoreSubmitted } = {}) {
     }
   }
 
+  function updateScore(n) {
+    currentScore.value = n
+  }
+
   function clearSubmitStatus() {
     if (submitStatusTimer) {
       clearTimeout(submitStatusTimer)
@@ -120,6 +124,7 @@ export function useGameSession({ snakeGameRef, onScoreSubmitted } = {}) {
     handleGameOver,
     fetchBestScore,
     clearSubmitStatus,
-    playAgain
+    playAgain,
+    updateScore
   }
 }
