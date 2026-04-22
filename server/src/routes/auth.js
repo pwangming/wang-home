@@ -1,7 +1,7 @@
 import Router from 'koa-router'
-import { supabase } from '../lib/supabase.js'
+import { supabase, createAnonClient } from '../lib/supabase.js'
 import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
-import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter } from '../middleware/rateLimit.js'
+import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter, createResetRequestRateLimiter, createResetConfirmRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 import { ok, fail } from '../lib/response.js'
 
@@ -126,7 +126,7 @@ function createAuthRouter() {
   // POST /reset-request
   // Accepts { email }, sends a password reset email via Supabase.
   // Always returns success to prevent email enumeration.
-  router.post('/reset-request', createCsrfMiddleware(), async (ctx) => {
+  router.post('/reset-request', createCsrfMiddleware(), createResetRequestRateLimiter(), async (ctx) => {
     const { email } = ctx.request.body
 
     if (!email) {
@@ -146,7 +146,10 @@ function createAuthRouter() {
 
   // POST /reset-confirm
   // Accepts { token, password }, updates the user's password.
-  router.post('/reset-confirm', createCsrfMiddleware(), async (ctx) => {
+  // Use a per-request client: setSession mutates the client's auth state, and
+  // the shared singleton would leak that state across concurrent requests
+  // (cross-user password takeover risk). Each call gets its own isolated client.
+  router.post('/reset-confirm', createCsrfMiddleware(), createResetConfirmRateLimiter(), async (ctx) => {
     const { token, password } = ctx.request.body
 
     if (!token || !password) {
@@ -159,7 +162,18 @@ function createAuthRouter() {
       return
     }
 
-    const { data, error } = await supabase.auth.updateUser(token, { password })
+    const reqClient = createAnonClient()
+
+    const { error: sessionError } = await reqClient.auth.setSession({
+      access_token: token,
+      refresh_token: token
+    })
+    if (sessionError) {
+      fail(ctx, 400, sessionError.message)
+      return
+    }
+
+    const { data, error } = await reqClient.auth.updateUser({ password })
 
     if (error) {
       fail(ctx, 400, error.message)
