@@ -36,7 +36,8 @@ const mockAuth = {
   signOut: jest.fn(),
   getUser: jest.fn(),
   resetPasswordForEmail: jest.fn(),
-  updateUser: jest.fn()
+  updateUser: jest.fn(),
+  setSession: jest.fn()
 }
 
 const mockFrom = jest.fn(() => ({
@@ -64,6 +65,7 @@ const mockSessionMiddleware = jest.fn(async (ctx, next) => {
 })
 
 const { default: authRouter } = await import('../../src/routes/auth.js')
+const { __resetAll } = await import('../../src/middleware/rateLimit.js')
 
 describe('Auth Routes', () => {
   let app
@@ -74,6 +76,9 @@ describe('Auth Routes', () => {
     mockAuth.signInWithPassword.mockReset()
     mockAuth.signOut.mockReset()
     mockAuth.getUser.mockReset()
+    mockAuth.resetPasswordForEmail.mockReset()
+    mockAuth.updateUser.mockReset()
+    mockAuth.setSession.mockReset()
     mockAuth.getUser.mockResolvedValue({ data: { user: { id: 'test-id' } }, error: null })
     mockFrom.mockReset()
   })
@@ -324,20 +329,33 @@ describe('Auth Routes', () => {
       expect(res.body.error).toBe('Password must be at least 6 characters')
     })
 
-    test('returns 400 when Supabase updateUser fails', async () => {
-      mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'Token expired' } })
+    test('returns 400 when setSession fails (invalid/expired recovery token)', async () => {
+      mockAuth.setSession.mockResolvedValue({ data: null, error: { message: 'Token expired' } })
       const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'expired-token', password: 'newpassword123' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('Token expired')
+      expect(mockAuth.updateUser).not.toHaveBeenCalled()
     })
 
-    test('returns 200 and user data on success', async () => {
+    test('returns 400 when Supabase updateUser fails', async () => {
+      mockAuth.setSession.mockResolvedValue({ data: { session: {} }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'Weak password' } })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'valid-token', password: 'newpassword123' })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Weak password')
+    })
+
+    test('returns 200 and user data on success and calls SDK with correct signatures', async () => {
       const mockUser = { id: '123', email: 'test@test.com' }
+      mockAuth.setSession.mockResolvedValue({ data: { session: {} }, error: null })
       mockAuth.updateUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+      mockAuth.signOut.mockResolvedValue({ error: null })
       const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'valid-token', password: 'newpassword123' })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(res.body.data.user.id).toBe('123')
+      expect(mockAuth.setSession).toHaveBeenCalledWith({ access_token: 'valid-token', refresh_token: 'valid-token' })
+      expect(mockAuth.updateUser).toHaveBeenCalledWith({ password: 'newpassword123' })
     })
   })
 
@@ -462,6 +480,56 @@ describe('Auth Routes', () => {
       const res = await simulateRequest(app, 'POST', '/api/auth/logout', null, { Cookie: 'session=some-token' })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
+    })
+  })
+
+  // ========== Rate limiting: /api/auth/reset-request ==========
+  describe('POST /api/auth/reset-request rate limiting', () => {
+    beforeEach(() => {
+      __resetAll()
+      mockAuth.resetPasswordForEmail.mockResolvedValue({ error: null })
+    })
+
+    test('returns 429 after 3 requests in 1h for same email', async () => {
+      for (let i = 0; i < 3; i++) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'ratetest@t.com' })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'ratetest@t.com' })
+      expect(res.status).toBe(429)
+    })
+
+    test('different emails have independent counters', async () => {
+      for (let i = 0; i < 3; i++) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'user1@t.com' })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'user2@t.com' })
+      expect(res.status).toBe(200)
+    })
+
+    test('email case and whitespace cannot bypass per-email limit', async () => {
+      const variants = ['Bypass@T.com', 'bypass@t.com', '  BYPASS@T.COM  ']
+      for (const email of variants) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-request', { email })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'bypass@t.com' })
+      expect(res.status).toBe(429)
+    })
+  })
+
+  // ========== Rate limiting: /api/auth/reset-confirm ==========
+  describe('POST /api/auth/reset-confirm rate limiting', () => {
+    beforeEach(() => {
+      __resetAll()
+      mockAuth.setSession.mockResolvedValue({ data: { session: {} }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'Token expired' } })
+    })
+
+    test('returns 429 after 10 requests from same IP in 15min', async () => {
+      for (let i = 0; i < 10; i++) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'x', password: 'abcdef' })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'x', password: 'abcdef' })
+      expect(res.status).toBe(429)
     })
   })
 })

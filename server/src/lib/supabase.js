@@ -14,3 +14,10 @@ export function createUserScopedClient(token) {
     }
   })
 }
+
+// Create a fresh anon client for flows that mutate the client's auth state
+// (e.g. setSession for password recovery). Using a per-request client prevents
+// cross-request session pollution on the shared singleton.
+export function createAnonClient() {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+}
