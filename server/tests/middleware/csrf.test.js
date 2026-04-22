@@ -58,3 +58,70 @@ describe('CSRF middleware', () => {
     expect(ctx.status).toBe(200)
   })
 })
+
+describe('CSRF middleware wildcard matching', () => {
+  const noop = async () => {}
+  const mw = createCsrfMiddleware({
+    allowedOrigins: [
+      'https://client-inky-two.vercel.app',
+      'https://client-*-wangwang4467-1105s-projects.vercel.app'
+    ]
+  })
+
+  it('allows exact production origin', async () => {
+    const ctx = createMockCtx('POST', 'https://client-inky-two.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(200)
+  })
+
+  it('allows preview hash origin matching wildcard', async () => {
+    const ctx = createMockCtx('POST', 'https://client-1bgsu1ng6-wangwang4467-1105s-projects.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(200)
+  })
+
+  it('allows git-branch alias origin matching wildcard', async () => {
+    const ctx = createMockCtx('POST', 'https://client-git-develop-wangwang4467-1105s-projects.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(200)
+  })
+
+  it('blocks vercel.app subdomain outside team namespace', async () => {
+    const ctx = createMockCtx('POST', 'https://client-abc-evilteam.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(403)
+  })
+
+  it('blocks subdomain-injection bypass with extra dot', async () => {
+    const ctx = createMockCtx('POST', 'https://client-evil.attacker.com-wangwang4467-1105s-projects.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(403)
+  })
+
+  it('blocks userinfo bypass attempt', async () => {
+    const ctx = createMockCtx('POST', 'https://client-a-wangwang4467-1105s-projects.vercel.app@evil.com')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(403)
+  })
+
+  it('blocks non-matching client prefix', async () => {
+    const ctx = createMockCtx('POST', 'https://evil-foo-wangwang4467-1105s-projects.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(403)
+  })
+
+  it('blocks wrong protocol (http) even if hostname matches', async () => {
+    const ctx = createMockCtx('POST', 'http://client-abc-wangwang4467-1105s-projects.vercel.app')
+    await mw(ctx, noop)
+    expect(ctx.status).toBe(403)
+  })
+
+  it('ignores invalid entries in allowedOrigins list', async () => {
+    const mw2 = createCsrfMiddleware({
+      allowedOrigins: ['not-a-url', '', 'https://client-inky-two.vercel.app']
+    })
+    const ctx = createMockCtx('POST', 'https://client-inky-two.vercel.app')
+    await mw2(ctx, noop)
+    expect(ctx.status).toBe(200)
+  })
+})
