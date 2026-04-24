@@ -48,7 +48,21 @@ describe('api.js', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ email: 'test@test.com', password: 'password123' })
+        body: JSON.stringify({ email: 'test@test.com', password: 'password123', rememberMe: false })
+      }))
+    })
+
+    it('should include rememberMe for login requests', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { success: true } })
+      })
+
+      await api.auth.login('test@test.com', 'password123', true)
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@test.com', password: 'password123', rememberMe: true })
       }))
     })
 

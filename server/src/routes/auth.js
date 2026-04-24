@@ -5,6 +5,8 @@ import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLi
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 import { ok, fail } from '../lib/response.js'
 
+const REMEMBER_ME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+
 function createAuthRouter() {
   const router = new Router({ prefix: '/api/auth' })
 
@@ -76,7 +78,7 @@ function createAuthRouter() {
     createCsrfMiddleware(),
     createLoginRateLimiter(),
     async (ctx) => {
-      const { email, password } = ctx.request.body
+      const { email, password, rememberMe } = ctx.request.body
 
       if (!email || !password) {
         fail(ctx, 400, 'email and password are required')
@@ -98,6 +100,7 @@ function createAuthRouter() {
         ctx.session.supabaseAccessToken = data.session.access_token
         ctx.session.supabaseRefreshToken = data.session.refresh_token
         ctx.session.userId = data.user.id
+        ctx.session.maxAge = rememberMe === true ? REMEMBER_ME_MAX_AGE_MS : 'session'
       }
 
       const userScopedClient = createUserScopedClient(data.session.access_token)

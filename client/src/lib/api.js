@@ -60,8 +60,8 @@ export const api = {
   auth: {
     register: (email, password, username) =>
       request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, username }) }),
-    login: (email, password) =>
-      request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    login: (email, password, rememberMe = false) =>
+      request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, rememberMe }) }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     me: () => request('/auth/me'),
     resetRequest: (email) =>

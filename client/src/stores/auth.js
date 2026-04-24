@@ -34,8 +34,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async login(email, password) {
-      const data = await api.auth.login(email, password)
+    async login(email, password, rememberMe = false) {
+      const data = await api.auth.login(email, password, rememberMe)
       this.user = data.user
       this._startHeartbeat()
       return data

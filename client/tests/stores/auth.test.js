@@ -76,6 +76,18 @@ describe('auth Store', () => {
 
       await authStore.login('test@test.com', 'password123')
 
+      expect(api.auth.login).toHaveBeenCalledWith('test@test.com', 'password123', false)
+      expect(authStore.user).toEqual(mockUser)
+    })
+
+    it('should pass rememberMe through to the login API', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      const { api } = await import('../../src/lib/api.js')
+      api.auth.login.mockResolvedValue({ user: mockUser })
+
+      await authStore.login('test@test.com', 'password123', true)
+
+      expect(api.auth.login).toHaveBeenCalledWith('test@test.com', 'password123', true)
       expect(authStore.user).toEqual(mockUser)
     })
 
