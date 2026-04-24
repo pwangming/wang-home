@@ -11,7 +11,7 @@
 | 前端 | Vue 3 + Vite + Pinia + Naive UI |
 | 后端 | Koa + koa-session + koa-router |
 | 数据库 | Supabase (PostgreSQL + Auth) |
-| 前端部署 | Vercel (https://client-inky-two.vercel.app) |
+| 前端部署 | Vercel (生产：https://client-inky-two.vercel.app，测试：https://client-git-develop-wangwang4467-1105s-projects.vercel.app/) |
 | 后端部署 | Railway (自动从 Git push 部署) |
 
 ## 项目结构
@@ -100,11 +100,11 @@ supabase db push --project-ref kltksixmakbpcljjkvbw  # 推送到生产
 ### TDD 流程（前后端通用）
 
 ### 测试用例核心原则
-不允许通过弱化断言来让测试通过
-不允许删除失败测试，除非先解释并等待确认
-不允许把核心逻辑 mock 掉后声称“已测试”
-不允许只测 happy path
-必须列出新增测试覆盖的场景和未覆盖风险
+- 不允许通过弱化断言来让测试通过
+- 不允许删除失败测试，除非先解释并等待确认
+- 不允许把核心逻辑 mock 掉后声称“已测试”
+- 不允许只测 happy path
+- 必须列出新增测试覆盖的场景和未覆盖风险
 
 ```
 写测试 (RED) → 运行测试验证失败 → 写实现 (GREEN) → 运行测试验证通过 → 重构
