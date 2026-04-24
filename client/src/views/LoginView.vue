@@ -148,7 +148,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
-    await authStore.login(form.email, form.password)
+    await authStore.login(form.email, form.password, rememberMe.value)
     router.push('/game')
   } catch (err) {
     errorMessage.value = err.message || '登录失败'
@@ -433,7 +433,6 @@ function handleGoogleLogin() {
   }
 }
 </style>
-
 
 
 
