@@ -17,6 +17,13 @@ jobs:
       - name: Enable squash auto-merge
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
+
+          if [ "$(gh pr view "$PR_NUM" --json autoMergeRequest --jq '.autoMergeRequest != null')" = "true" ]; then
+            echo "Auto-merge is already enabled for PR #$PR_NUM"
+            exit 0
+          fi
+
           gh pr merge "$PR_NUM" --auto --squash --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
