@@ -21,4 +21,18 @@ describe('SnakeGame', () => {
     expect(wrapper.emitted('scoreUpdate')[0]).toEqual([5])
     wrapper.unmount()
   })
+
+  it('emits eatFood with a normal food payload', async () => {
+    const wrapper = mount(SnakeGame, {
+      props: { speedMultiplier: 1, scoreMultiplier: 1.5 }
+    })
+
+    wrapper.vm.handleEatFood()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('eatFood')).toBeTruthy()
+    expect(wrapper.emitted('eatFood')[0]).toEqual([{ type: 'normal', score: 2 }])
+    expect(wrapper.emitted('scoreUpdate')[0]).toEqual([2])
+    wrapper.unmount()
+  })
 })

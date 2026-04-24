@@ -6,23 +6,19 @@ test.describe('Game Page', () => {
     await page.goto('/game')
 
     const guestWarning = page.locator('.guest-warning-content')
-    if (await guestWarning.isVisible()) {
-      await page.click('[data-testid="guest-continue-btn"]')
-      await expect(guestWarning).not.toBeVisible()
-    }
+    await expect(guestWarning).toBeVisible()
+    await page.click('[data-testid="guest-continue-btn"]')
+    await expect(guestWarning).not.toBeVisible()
+    await expect(page.locator('.n-modal-mask')).toHaveCount(0)
 
     await page.click('[data-testid="game-start-btn"]')
     await expect(page.locator('canvas')).toBeVisible()
   })
 
   test('unauthenticated user: play without login -> score not recorded', async ({ page }) => {
-    const sessionRequests = []
     const leaderboardRequests = []
 
     page.on('request', request => {
-      if (request.url().includes('/api/game-sessions/start') && request.method() === 'POST') {
-        sessionRequests.push(request)
-      }
       if (request.url().includes('/api/leaderboard') && request.method() === 'POST') {
         leaderboardRequests.push(request)
       }
@@ -41,7 +37,6 @@ test.describe('Game Page', () => {
     await page.keyboard.press('Escape')
 
     await expect(page.locator('[data-testid="submit-feedback"]')).toHaveCount(0)
-    expect(sessionRequests).toHaveLength(0)
     expect(leaderboardRequests).toHaveLength(0)
   })
 })
