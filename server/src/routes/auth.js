@@ -148,15 +148,16 @@ function createAuthRouter() {
   })
 
   // POST /reset-confirm
-  // Accepts { token, password }, updates the user's password.
+  // Accepts { accessToken, refreshToken, password } (both tokens come from the
+  // Supabase recovery link's hash fragment). Updates the user's password.
   // Use a per-request client: setSession mutates the client's auth state, and
   // the shared singleton would leak that state across concurrent requests
   // (cross-user password takeover risk). Each call gets its own isolated client.
   router.post('/reset-confirm', createCsrfMiddleware(), createResetConfirmRateLimiter(), async (ctx) => {
-    const { token, password } = ctx.request.body
+    const { accessToken, refreshToken, password } = ctx.request.body
 
-    if (!token || !password) {
-      fail(ctx, 400, 'token and password are required')
+    if (!accessToken || !refreshToken || !password) {
+      fail(ctx, 400, 'accessToken, refreshToken and password are required')
       return
     }
 
@@ -168,8 +169,8 @@ function createAuthRouter() {
     const reqClient = createAnonClient()
 
     const { error: sessionError } = await reqClient.auth.setSession({
-      access_token: token,
-      refresh_token: token
+      access_token: accessToken,
+      refresh_token: refreshToken
     })
     if (sessionError) {
       fail(ctx, 400, sessionError.message)

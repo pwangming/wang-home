@@ -149,9 +149,49 @@ describe('ResetPasswordView', () => {
     })
   })
 
-  describe('step: reset (token in URL)', () => {
-    // Note: onMounted behavior (detecting token in URL) is tested via integration/E2E.
-    // These tests focus on the handleReset logic itself.
+  describe('step: reset (tokens from hash fragment)', () => {
+    // Supabase recovery link returns tokens in URL hash:
+    // /reset-password#access_token=...&refresh_token=...&type=recovery
+
+    beforeEach(() => {
+      window.location.hash = ''
+    })
+
+    afterEach(() => {
+      window.location.hash = ''
+    })
+
+    it('should parse recovery tokens from hash and switch to reset step on mount', async () => {
+      window.location.hash = '#access_token=ax&refresh_token=rx&type=recovery&expires_in=3600'
+      const { wrapper } = await createWrapper()
+      expect(wrapper.vm.step).toBe('reset')
+      expect(wrapper.vm.tokens.accessToken).toBe('ax')
+      expect(wrapper.vm.tokens.refreshToken).toBe('rx')
+    })
+
+    it('should NOT switch to reset step when type is not recovery', async () => {
+      window.location.hash = '#access_token=ax&refresh_token=rx&type=signup'
+      const { wrapper } = await createWrapper()
+      expect(wrapper.vm.step).toBe('request')
+    })
+
+    it('should NOT switch to reset step when access_token is missing', async () => {
+      window.location.hash = '#refresh_token=rx&type=recovery'
+      const { wrapper } = await createWrapper()
+      expect(wrapper.vm.step).toBe('request')
+    })
+
+    it('should NOT switch to reset step when refresh_token is missing', async () => {
+      window.location.hash = '#access_token=ax&type=recovery'
+      const { wrapper } = await createWrapper()
+      expect(wrapper.vm.step).toBe('request')
+    })
+
+    it('should clear hash from URL after parsing to prevent token leak', async () => {
+      window.location.hash = '#access_token=ax&refresh_token=rx&type=recovery'
+      await createWrapper()
+      expect(window.location.hash).toBe('')
+    })
 
     it('should show error when passwords do not match', async () => {
       const { wrapper } = await createWrapper()
@@ -175,27 +215,22 @@ describe('ResetPasswordView', () => {
       expect(wrapper.vm.errors.password).toBe('密码至少 6 个字符')
     })
 
-    it('should call api.auth.resetConfirm with token and password on success', async () => {
+    it('should call api.auth.resetConfirm with accessToken, refreshToken and password', async () => {
       api.auth.resetConfirm.mockResolvedValue({ success: true })
-      const { wrapper, router } = await createWrapper()
-
-      // Navigate to reset step with token
-      await router.push('/reset-password?token=abc123')
-      await wrapper.vm.$nextTick()
+      window.location.hash = '#access_token=ax&refresh_token=rx&type=recovery'
+      const { wrapper } = await createWrapper()
 
       wrapper.vm.resetForm.password = 'newpassword123'
       wrapper.vm.resetForm.passwordConfirm = 'newpassword123'
       await wrapper.vm.handleReset()
 
-      expect(api.auth.resetConfirm).toHaveBeenCalledWith('abc123', 'newpassword123')
+      expect(api.auth.resetConfirm).toHaveBeenCalledWith('ax', 'rx', 'newpassword123')
     })
 
     it('should switch to success step after successful reset', async () => {
       api.auth.resetConfirm.mockResolvedValue({ success: true })
-      const { wrapper, router } = await createWrapper()
-
-      await router.push('/reset-password?token=abc123')
-      await wrapper.vm.$nextTick()
+      window.location.hash = '#access_token=ax&refresh_token=rx&type=recovery'
+      const { wrapper } = await createWrapper()
 
       wrapper.vm.resetForm.password = 'newpassword123'
       wrapper.vm.resetForm.passwordConfirm = 'newpassword123'
@@ -204,7 +239,7 @@ describe('ResetPasswordView', () => {
       expect(wrapper.vm.step).toBe('success')
     })
 
-    it('should show error and go back to request when token is missing on reset', async () => {
+    it('should show error and revert to request step when tokens missing at submit', async () => {
       const { wrapper } = await createWrapper()
 
       wrapper.vm.step = 'reset'

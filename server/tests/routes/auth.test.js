@@ -381,27 +381,33 @@ describe('Auth Routes', () => {
 
   // ========== /api/auth/reset-confirm ==========
   describe('POST /api/auth/reset-confirm', () => {
-    test('returns 400 when token is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { password: 'newpassword' })
+    test('returns 400 when accessToken is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { refreshToken: 'r', password: 'newpassword' })
       expect(res.status).toBe(400)
-      expect(res.body.error).toBe('token and password are required')
+      expect(res.body.error).toBe('accessToken, refreshToken and password are required')
+    })
+
+    test('returns 400 when refreshToken is missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', password: 'newpassword' })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('accessToken, refreshToken and password are required')
     })
 
     test('returns 400 when password is missing', async () => {
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'some-token' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r' })
       expect(res.status).toBe(400)
-      expect(res.body.error).toBe('token and password are required')
+      expect(res.body.error).toBe('accessToken, refreshToken and password are required')
     })
 
     test('returns 400 when password is too short', async () => {
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'some-token', password: '123' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r', password: '123' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('Password must be at least 6 characters')
     })
 
     test('returns 400 when setSession fails (invalid/expired recovery token)', async () => {
       mockAuth.setSession.mockResolvedValue({ data: null, error: { message: 'Token expired' } })
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'expired-token', password: 'newpassword123' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'expired-a', refreshToken: 'expired-r', password: 'newpassword123' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('Token expired')
       expect(mockAuth.updateUser).not.toHaveBeenCalled()
@@ -410,21 +416,25 @@ describe('Auth Routes', () => {
     test('returns 400 when Supabase updateUser fails', async () => {
       mockAuth.setSession.mockResolvedValue({ data: { session: {} }, error: null })
       mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'Weak password' } })
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'valid-token', password: 'newpassword123' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r', password: 'newpassword123' })
       expect(res.status).toBe(400)
       expect(res.body.error).toBe('Weak password')
     })
 
-    test('returns 200 and user data on success and calls SDK with correct signatures', async () => {
+    test('returns 200 and user data on success and calls SDK with distinct access and refresh tokens', async () => {
       const mockUser = { id: '123', email: 'test@test.com' }
       mockAuth.setSession.mockResolvedValue({ data: { session: {} }, error: null })
       mockAuth.updateUser.mockResolvedValue({ data: { user: mockUser }, error: null })
       mockAuth.signOut.mockResolvedValue({ error: null })
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'valid-token', password: 'newpassword123' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', {
+        accessToken: 'access-xyz',
+        refreshToken: 'refresh-abc',
+        password: 'newpassword123'
+      })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(res.body.data.user.id).toBe('123')
-      expect(mockAuth.setSession).toHaveBeenCalledWith({ access_token: 'valid-token', refresh_token: 'valid-token' })
+      expect(mockAuth.setSession).toHaveBeenCalledWith({ access_token: 'access-xyz', refresh_token: 'refresh-abc' })
       expect(mockAuth.updateUser).toHaveBeenCalledWith({ password: 'newpassword123' })
     })
   })
@@ -596,9 +606,9 @@ describe('Auth Routes', () => {
 
     test('returns 429 after 10 requests from same IP in 15min', async () => {
       for (let i = 0; i < 10; i++) {
-        await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'x', password: 'abcdef' })
+        await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r', password: 'abcdef' })
       }
-      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { token: 'x', password: 'abcdef' })
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r', password: 'abcdef' })
       expect(res.status).toBe(429)
     })
   })
