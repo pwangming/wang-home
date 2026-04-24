@@ -217,8 +217,9 @@ function tick() {
 
 // Handle eating food
 function handleEatFood() {
-  score.value += Math.round(1 * props.scoreMultiplier)
-  emit('eatFood')
+  const gained = Math.round(1 * props.scoreMultiplier)
+  score.value += gained
+  emit('eatFood', { type: 'normal', score: gained })
   placeFood()
 }
 

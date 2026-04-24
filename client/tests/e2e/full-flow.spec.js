@@ -12,14 +12,6 @@ test.describe('Full Flow E2E', () => {
       })
     })
 
-    await page.route('**/api/game-sessions/start', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, sessionId: 'session-full-flow' })
-      })
-    })
-
     await page.route('**/api/leaderboard', async route => {
       if (route.request().method() === 'POST') {
         await route.fulfill({
@@ -66,13 +58,9 @@ test.describe('Full Flow E2E', () => {
   })
 
   test('unauthenticated user: play without login -> score is not submitted', async ({ page }) => {
-    const sessionRequests = []
     const leaderboardRequests = []
 
     page.on('request', request => {
-      if (request.url().includes('/api/game-sessions/start') && request.method() === 'POST') {
-        sessionRequests.push(request)
-      }
       if (request.url().includes('/api/leaderboard') && request.method() === 'POST') {
         leaderboardRequests.push(request)
       }
@@ -90,7 +78,6 @@ test.describe('Full Flow E2E', () => {
     await page.keyboard.press('Escape')
 
     await expect(page.locator('[data-testid="submit-feedback"]')).toHaveCount(0)
-    expect(sessionRequests).toHaveLength(0)
     expect(leaderboardRequests).toHaveLength(0)
   })
 })

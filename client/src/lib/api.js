@@ -77,8 +77,6 @@ export const api = {
     list: (page = 1, pageSize = 20) =>
       request(`/leaderboard?page=${page}&pageSize=${pageSize}`),
     getMyRank: () => request('/leaderboard/rank/me'),
-    startSession: (speedMultiplier) =>
-      request('/game-sessions/start', { method: 'POST', body: JSON.stringify({ speedMultiplier }) }),
     submitScore: (sessionId, score, speedMultiplier, scoreMultiplier, endedAt, durationMs) =>
       request('/leaderboard', {
         method: 'POST',

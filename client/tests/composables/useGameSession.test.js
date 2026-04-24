@@ -6,7 +6,6 @@ import { setActivePinia, createPinia } from 'pinia'
 vi.mock('../../src/lib/api.js', () => ({
   api: {
     leaderboard: {
-      startSession: vi.fn(),
       submitScore: vi.fn(),
       getMyRank: vi.fn()
     }
@@ -136,30 +135,17 @@ describe('useGameSession', () => {
 
       expect(isPlaying.value).toBe(true)
       expect(mockSnakeGame.startGame).toHaveBeenCalled()
-      expect(api.leaderboard.startSession).not.toHaveBeenCalled()
     })
 
-    it('should call startSession API with selectedSpeed when authenticated', async () => {
+    it('should start game when authenticated without requiring a server session', async () => {
       useAuthStore.mockReturnValue({ user: { id: '123' } })
-      api.leaderboard.startSession.mockResolvedValue({})
-
-      const { isPlaying, startGame, selectedSpeed } = useGameSession({ snakeGameRef: mockSnakeGame })
-
-      await startGame()
-
-      expect(isPlaying.value).toBe(true)
-      expect(api.leaderboard.startSession).toHaveBeenCalledWith(selectedSpeed.value)
-    })
-
-    it('should start game even if session start fails', async () => {
-      useAuthStore.mockReturnValue({ user: { id: '123' } })
-      api.leaderboard.startSession.mockRejectedValue(new Error('Network error'))
 
       const { isPlaying, startGame } = useGameSession({ snakeGameRef: mockSnakeGame })
 
       await startGame()
 
       expect(isPlaying.value).toBe(true)
+      expect(mockSnakeGame.startGame).toHaveBeenCalled()
     })
 
     // Regression: prod bug where startGame fired before <SnakeGame v-if="isPlaying"> mounted,
@@ -207,6 +193,19 @@ describe('useGameSession', () => {
       expect(bestScore.value).toBe(100)
       // #2: verify onScoreSubmitted callback was called
       expect(onScoreSubmitted).toHaveBeenCalled()
+    })
+
+    it('should accept gameContext as a fourth argument without changing score submission', async () => {
+      useAuthStore.mockReturnValue({ user: { id: '123' } })
+      api.leaderboard.submitScore.mockResolvedValue({})
+      api.leaderboard.getMyRank.mockResolvedValue({ rank: { best_score: 100 } })
+      const gameContext = { foodEaten: 3, startedAt: 1710000000000 }
+
+      const { handleGameOver, lastGameContext } = useGameSession()
+      await expect(handleGameOver(100, 1.5, 2.0, gameContext)).resolves.toBeUndefined()
+
+      expect(lastGameContext.value).toEqual(gameContext)
+      expect(api.leaderboard.submitScore).toHaveBeenCalledWith(null, 100, 1.5, 2.0, expect.any(String), null)
     })
 
     it('should handle score submission failure with token error', async () => {
