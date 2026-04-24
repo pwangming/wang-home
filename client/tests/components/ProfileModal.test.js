@@ -8,17 +8,13 @@ vi.mock('naive-ui', () => ({
     name: 'NModal',
     props: ['show', 'preset', 'title', 'style', 'maskClosable'],
     emits: ['update:show'],
-    setup(props, { emit }) {
+    setup(props, { emit, slots }) {
       return () => h('div', { 'data-testid': 'profile-modal' }, [
         h('button', { onClick: () => emit('update:show', false) }, 'close'),
-        props.show && h('div', { 'data-testid': 'modal-content' },
-          props.title === '修改用户名' ? [
-            h('form', { onSubmit: (e) => e.preventDefault() }, [
-              h('input', { 'data-testid': 'profile-username', value: 'testuser' }),
-              h('button', { 'data-testid': 'profile-submit', onClick: () => {} }, '保存')
-            ])
-          ] : []
-        )
+        props.show && h('div', { 'data-testid': 'modal-content' }, [
+          slots.default?.(),
+          slots.footer?.()
+        ])
       ])
     }
   }),
@@ -33,10 +29,11 @@ vi.mock('naive-ui', () => ({
     name: 'NButton',
     props: ['type', 'loading'],
     emits: ['click'],
-    setup(props, { emit }) {
+    setup(props, { emit, attrs, slots }) {
       return () => h('button', {
+        ...attrs,
         onClick: () => emit('click')
-      }, 'button')
+      }, slots.default?.() || 'button')
     }
   }),
   NAlert: defineComponent({
@@ -44,6 +41,24 @@ vi.mock('naive-ui', () => ({
     props: ['type'],
     setup(props, { slots }) {
       return () => h('div', { 'data-testid': 'alert' }, slots.default?.())
+    }
+  }),
+  NTabs: defineComponent({
+    name: 'NTabs',
+    props: ['value', 'type', 'animated'],
+    emits: ['update:value'],
+    setup(props, { slots }) {
+      return () => h('div', { 'data-testid': 'profile-tabs', 'data-active-tab': props.value }, slots.default?.())
+    }
+  }),
+  NTabPane: defineComponent({
+    name: 'NTabPane',
+    props: ['name', 'tab'],
+    setup(props, { slots }) {
+      return () => h('section', { 'data-testid': `tab-${props.name}` }, [
+        h('h3', {}, props.tab),
+        slots.default?.()
+      ])
     }
   })
 }))
@@ -54,9 +69,9 @@ vi.mock('../../src/components/ui/NeonInput.vue', () => ({
     name: 'NeonInput',
     props: ['modelValue', 'placeholder', 'error', 'type', 'showPasswordToggle'],
     emits: ['update:modelValue'],
-    setup(props, { emit }) {
+    setup(props, { emit, attrs }) {
       return () => h('input', {
-        'data-testid': 'username-input',
+        ...attrs,
         value: props.modelValue,
         onInput: (e) => emit('update:modelValue', e.target.value)
       })
@@ -90,6 +105,21 @@ describe('ProfileModal', () => {
         }
       })
       expect(wrapper.find('[data-testid="profile-modal"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('testuser')
+    })
+
+    it('should render profile and security tabs', () => {
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: true,
+          currentUsername: 'testuser'
+        }
+      })
+
+      expect(wrapper.find('[data-testid="profile-tabs"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="tab-profile"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="tab-security"]').exists()).toBe(true)
+      expect(wrapper.vm.activeTab).toBe('profile')
     })
   })
 
@@ -102,12 +132,10 @@ describe('ProfileModal', () => {
         }
       })
 
-      // The component validates on submit - find and click submit button
-      const submitBtn = wrapper.find('[data-testid="profile-submit"]')
-      await submitBtn.trigger('click')
+      wrapper.vm.form.username = ''
+      await wrapper.vm.handleSubmit()
 
-      // The modal re-renders based on show prop
-      expect(wrapper.vm.errors.username).toBe('')
+      expect(wrapper.vm.errors.username).toBe('请输入用户名')
     })
   })
 
