@@ -1,6 +1,8 @@
 // In-memory rate limiter for local development
 // Production should use Redis or other shared storage
 
+const _stores = []
+
 function createRateLimiter(options = {}) {
   const {
     windowMs = 60 * 1000,
@@ -9,6 +11,7 @@ function createRateLimiter(options = {}) {
   } = options
 
   const store = new Map()
+  _stores.push(store)
   const CLEANUP_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
   // Periodic cleanup of expired entries
@@ -85,4 +88,31 @@ export function createLeaderboardRateLimiter() {
     maxRequests: 10,
     keyGenerator: (ctx) => `leaderboard:${ctx.state.user?.id || ctx.ip}`
   })
+}
+
+export function createResetRequestRateLimiter() {
+  return createRateLimiter({
+    windowMs: 60 * 60 * 1000,  // 1 hour
+    maxRequests: 3,
+    keyGenerator: (ctx) => {
+      // Normalize email so case/whitespace variants can't bypass the per-email limit.
+      const raw = ctx.request.body?.email
+      const email = typeof raw === 'string' ? raw.trim().toLowerCase() : ''
+      return `reset-request:${email || ctx.ip}`
+    }
+  })
+}
+
+export function createResetConfirmRateLimiter() {
+  return createRateLimiter({
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    maxRequests: 10,
+    keyGenerator: (ctx) => `reset-confirm:${ctx.ip}`
+  })
+}
+
+// Test-only: clear all in-memory rate limit stores to prevent state pollution
+export function __resetAll() {
+  if (process.env.NODE_ENV !== 'test') return
+  _stores.forEach(s => s.clear())
 }

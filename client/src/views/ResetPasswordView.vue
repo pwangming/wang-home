@@ -118,14 +118,13 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import NeonCard from '../components/ui/NeonCard.vue'
 import NeonButton from '../components/ui/NeonButton.vue'
 import NeonInput from '../components/ui/NeonInput.vue'
 import { api } from '../lib/api.js'
 
 const router = useRouter()
-const route = useRoute()
 
 const step = ref('request')
 const isSubmitting = ref(false)
@@ -135,13 +134,25 @@ const successMessage = ref('')
 const requestForm = reactive({ email: '' })
 const resetForm = reactive({ password: '', passwordConfirm: '' })
 const errors = reactive({ email: '', password: '', passwordConfirm: '' })
+const tokens = reactive({ accessToken: '', refreshToken: '' })
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 onMounted(() => {
-  // If token is in query params, go to reset step
-  if (route.query.token) {
+  // Supabase password recovery redirects to /reset-password with tokens in the
+  // URL hash (not query). Parse them, switch to reset step, then clear the hash
+  // so access_token doesn't leak via browser history or Referer headers.
+  const hash = window.location.hash.slice(1)
+  if (!hash) return
+  const params = new URLSearchParams(hash)
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+  const type = params.get('type')
+  if (type === 'recovery' && accessToken && refreshToken) {
+    tokens.accessToken = accessToken
+    tokens.refreshToken = refreshToken
     step.value = 'reset'
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
   }
 })
 
@@ -198,8 +209,7 @@ async function handleReset() {
   errorMessage.value = ''
   if (!validateReset()) return
 
-  const token = route.query.token
-  if (!token) {
+  if (!tokens.accessToken || !tokens.refreshToken) {
     errorMessage.value = '重置链接已失效，请重新请求密码重置'
     step.value = 'request'
     return
@@ -207,7 +217,7 @@ async function handleReset() {
 
   isSubmitting.value = true
   try {
-    await api.auth.resetConfirm(token, resetForm.password)
+    await api.auth.resetConfirm(tokens.accessToken, tokens.refreshToken, resetForm.password)
     step.value = 'success'
   } catch (err) {
     errorMessage.value = err.message || '重置失败，链接可能已过期'

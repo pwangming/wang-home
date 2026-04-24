@@ -187,16 +187,16 @@ describe('api.js', () => {
       }))
     })
 
-    it('should call resetConfirm with token and password', async () => {
+    it('should call resetConfirm with accessToken, refreshToken and password', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ data: { user: {} } })
       })
 
-      await api.auth.resetConfirm('token123', 'newpassword')
+      await api.auth.resetConfirm('access-xyz', 'refresh-abc', 'newpassword')
 
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/reset-confirm', expect.objectContaining({
-        body: JSON.stringify({ token: 'token123', password: 'newpassword' })
+        body: JSON.stringify({ accessToken: 'access-xyz', refreshToken: 'refresh-abc', password: 'newpassword' })
       }))
     })
 
