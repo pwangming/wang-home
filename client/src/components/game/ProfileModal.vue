@@ -2,34 +2,45 @@
   <n-modal
     :show="show"
     preset="card"
-    title="修改用户名"
-    style="max-width: 420px;"
+    title="个人设置"
+    style="max-width: 520px;"
     :mask-closable="false"
     @update:show="onClose"
   >
-    <n-form :model="form" @submit.prevent="handleSubmit">
-      <div class="form-field">
-        <label class="form-label">当前用户名</label>
-        <div class="current-username">{{ currentUsername }}</div>
-      </div>
+    <n-tabs v-model:value="activeTab" type="line" animated>
+      <n-tab-pane name="profile" tab="基本信息">
+        <n-form :model="form" @submit.prevent="handleSubmit">
+          <div class="form-field">
+            <label class="form-label">当前用户名</label>
+            <div class="current-username">{{ currentUsername }}</div>
+          </div>
 
-      <div class="form-field">
-        <label class="form-label">新用户名</label>
-        <NeonInput
-          data-testid="profile-username"
-          v-model="form.username"
-          placeholder="输入新用户名"
-          :error="!!errors.username"
-        />
-        <span v-if="errors.username" class="form-error">{{ errors.username }}</span>
-        <span class="form-hint">2-20 个字符，只允许字母、数字、下划线</span>
-      </div>
-    </n-form>
+          <div class="form-field">
+            <label class="form-label">新用户名</label>
+            <NeonInput
+              data-testid="profile-username"
+              v-model="form.username"
+              placeholder="输入新用户名"
+              :error="!!errors.username"
+            />
+            <span v-if="errors.username" class="form-error">{{ errors.username }}</span>
+            <span class="form-hint">2-20 个字符，只允许字母、数字、下划线</span>
+          </div>
+        </n-form>
+      </n-tab-pane>
+
+      <n-tab-pane name="security" tab="账号安全">
+        <div class="security-panel" data-testid="profile-security-panel">
+          账号安全
+        </div>
+      </n-tab-pane>
+    </n-tabs>
 
     <template #footer>
       <div class="modal-footer">
         <n-button @click="onClose">取消</n-button>
         <n-button
+          v-if="activeTab === 'profile'"
           data-testid="profile-submit"
           type="primary"
           :loading="isSubmitting"
@@ -66,6 +77,7 @@ const emit = defineEmits(['update:show', 'usernameUpdated'])
 
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const activeTab = ref('profile')
 
 const form = reactive({ username: '' })
 const errors = reactive({ username: '' })
@@ -75,6 +87,7 @@ watch(() => props.show, (val) => {
     form.username = props.currentUsername || ''
     errors.username = ''
     errorMessage.value = ''
+    activeTab.value = 'profile'
   }
 })
 
@@ -159,5 +172,15 @@ function onClose() {
 
 .error-alert {
   margin-top: 12px;
+}
+
+.security-panel {
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #909399);
+  border: 1px dashed var(--card-border, #dcdfe6);
+  border-radius: 8px;
 }
 </style>
