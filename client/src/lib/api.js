@@ -66,8 +66,8 @@ export const api = {
     me: () => request('/auth/me'),
     resetRequest: (email) =>
       request('/auth/reset-request', { method: 'POST', body: JSON.stringify({ email }) }),
-    resetConfirm: (token, password) =>
-      request('/auth/reset-confirm', { method: 'POST', body: JSON.stringify({ token, password }) }),
+    resetConfirm: (accessToken, refreshToken, password) =>
+      request('/auth/reset-confirm', { method: 'POST', body: JSON.stringify({ accessToken, refreshToken, password }) }),
     updateProfile: (username) =>
       request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ username }) }),
     callback: (accessToken, refreshToken) =>
