@@ -104,7 +104,20 @@ describe('LoginView', () => {
       await wrapper.find('[data-testid="login-submit"]').trigger('click')
       await flushPromises()
 
-      expect(mockLogin).toHaveBeenCalledWith('test@test.com', 'password123')
+      expect(mockLogin).toHaveBeenCalledWith('test@test.com', 'password123', false)
+    })
+
+    it('passes checked rememberMe to authStore.login', async () => {
+      mockLogin.mockResolvedValue({})
+      const wrapper = mountLogin()
+
+      await setNeonInput(wrapper, 'login-email', 'test@test.com')
+      await setNeonInput(wrapper, 'login-password', 'password123')
+      await wrapper.find('.neon-checkbox__input').setValue(true)
+      await wrapper.find('[data-testid="login-submit"]').trigger('click')
+      await flushPromises()
+
+      expect(mockLogin).toHaveBeenCalledWith('test@test.com', 'password123', true)
     })
 
     it('shows error message on login failure', async () => {

@@ -72,6 +72,7 @@ describe('Auth Routes', () => {
 
   beforeEach(() => {
     app = authRouter()
+    __resetAll()
     mockAuth.signUp.mockReset()
     mockAuth.signInWithPassword.mockReset()
     mockAuth.signOut.mockReset()
@@ -176,6 +177,17 @@ describe('Auth Routes', () => {
 
   // ========== /api/auth/login ==========
   describe('POST /api/auth/login', () => {
+    let capturedSession
+    const captureSessionMiddleware = async (ctx, next) => {
+      ctx.session = {}
+      await next()
+      capturedSession = ctx.session
+    }
+
+    beforeEach(() => {
+      capturedSession = null
+    })
+
     test('returns 400 when email is missing', async () => {
       const res = await simulateRequest(app, 'POST', '/api/auth/login', { password: '123456' })
       expect(res.status).toBe(400)
@@ -229,6 +241,64 @@ describe('Auth Routes', () => {
       expect(res.body.success).toBe(true)
       expect(res.body.data.user.email).toBe('test@test.com')
       expect(res.body.data.user.username).toBe('testuser')
+    })
+
+    test('sets session maxAge to 30 days when rememberMe is true', async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      const mockSession = { access_token: 'mock-token', refresh_token: 'mock-refresh' }
+      mockAuth.signInWithPassword.mockResolvedValue({
+        data: { user: mockUser, session: mockSession },
+        error: null
+      })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { username: 'testuser' }, error: null })
+      })
+
+      const res = await simulateRequest(app, 'POST', '/api/auth/login', {
+        email: 'test@test.com', password: '123456', rememberMe: true
+      }, {}, [captureSessionMiddleware])
+
+      expect(res.status).toBe(200)
+      expect(capturedSession.maxAge).toBe(30 * 24 * 60 * 60 * 1000)
+      expect(capturedSession.supabaseAccessToken).toBe('mock-token')
+      expect(capturedSession.supabaseRefreshToken).toBe('mock-refresh')
+      expect(capturedSession.userId).toBe('123')
+    })
+
+    test("sets session maxAge to 'session' when rememberMe is false, omitted, or not boolean true", async () => {
+      const mockUser = { id: '123', email: 'test@test.com' }
+      const mockSession = { access_token: 'mock-token', refresh_token: 'mock-refresh' }
+      mockAuth.signInWithPassword.mockResolvedValue({
+        data: { user: mockUser, session: mockSession },
+        error: null
+      })
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      })
+
+      const falseRes = await simulateRequest(app, 'POST', '/api/auth/login', {
+        email: 'test@test.com', password: '123456', rememberMe: false
+      }, {}, [captureSessionMiddleware])
+      expect(falseRes.status).toBe(200)
+      expect(capturedSession.maxAge).toBe('session')
+
+      capturedSession = null
+      const omittedRes = await simulateRequest(app, 'POST', '/api/auth/login', {
+        email: 'test@test.com', password: '123456'
+      }, {}, [captureSessionMiddleware])
+      expect(omittedRes.status).toBe(200)
+      expect(capturedSession.maxAge).toBe('session')
+
+      capturedSession = null
+      const stringRes = await simulateRequest(app, 'POST', '/api/auth/login', {
+        email: 'test@test.com', password: '123456', rememberMe: 'true'
+      }, {}, [captureSessionMiddleware])
+      expect(stringRes.status).toBe(200)
+      expect(capturedSession.maxAge).toBe('session')
     })
 
     test('returns username as null when profile not found on login', async () => {
