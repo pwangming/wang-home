@@ -11,7 +11,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'npm run dev',
+      command: 'npm run dev -- --port 3003 --strictPort',
       port: 3003,
       reuseExistingServer: true,
       timeout: 120000,

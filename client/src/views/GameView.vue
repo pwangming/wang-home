@@ -58,8 +58,8 @@
               ref="snakeGameRef"
               :speed-multiplier="selectedSpeed"
               :score-multiplier="currentScoreMultiplier"
-              @game-over="handleGameOver"
-              @eat-food="playEatSound"
+              @game-over="onGameOver"
+              @eat-food="onEatFood"
               @score-update="updateScore"
             />
           </div>
@@ -134,16 +134,62 @@ const { handleCallback } = useAuthCallback({ api, authStore, router, message })
 const snakeGameRef = ref(null)
 const showLeaderboard = ref(false)
 const showProfileModal = ref(false)
+const sessionCounters = ref(null)
 let prevHtmlOverflow = ''
 let prevBodyOverflow = ''
 
 const {
   isPlaying, currentScore, lastGameScore, selectedSpeed, bestScore,
   submitStatus, submitMessage, currentScoreMultiplier,
-  startGame, handleGameOver, fetchBestScore, playAgain, updateScore
+  startGame: startGameSession,
+  handleGameOver: submitGameOver,
+  fetchBestScore,
+  playAgain: playAgainSession,
+  updateScore
 } = useGameSession({ snakeGameRef })
 
 watch(selectedSpeed, (val) => localStorage.setItem('preferredSpeed', val))
+
+function resetSessionCounters() {
+  sessionCounters.value = {
+    foodEaten: 0,
+    startedAt: Date.now()
+  }
+}
+
+function onEatFood(payload = {}) {
+  playEatSound()
+  if (!sessionCounters.value) return
+
+  sessionCounters.value.foodEaten += 1
+  sessionCounters.value.lastFoodType = payload.type || 'normal'
+}
+
+function buildGameContext(finalScore, speedMult, scoreMult) {
+  const counters = sessionCounters.value || { foodEaten: 0, startedAt: Date.now() }
+  return {
+    ...counters,
+    durationMs: Date.now() - counters.startedAt,
+    score: finalScore,
+    speedMultiplier: speedMult,
+    scoreMultiplier: scoreMult
+  }
+}
+
+function startGame() {
+  resetSessionCounters()
+  return startGameSession()
+}
+
+function playAgain() {
+  resetSessionCounters()
+  return playAgainSession()
+}
+
+function onGameOver(finalScore, speedMult, scoreMult) {
+  const gameContext = buildGameContext(finalScore, speedMult, scoreMult)
+  return submitGameOver(finalScore, speedMult, scoreMult, gameContext)
+}
 
 const handleLogout = () => authStore.logout().then(() => message.success('已退出登录'))
 const handleUsernameUpdated = (newUsername) => authStore.updateProfile(newUsername).then(() => message.success('用户名已更新'))
