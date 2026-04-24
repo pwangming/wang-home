@@ -60,6 +60,7 @@
               :score-multiplier="currentScoreMultiplier"
               @game-over="onGameOver"
               @eat-food="onEatFood"
+              @play-sound="playSound"
               @score-update="updateScore"
             />
           </div>
@@ -125,7 +126,7 @@ import { useGameSession } from '../composables/useGameSession.js'
 const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
-const { soundEnabled, toggle: soundToggle, playEat: playEatSound } = useSound()
+const { soundEnabled, toggle: soundToggle, playSound } = useSound()
 const { showGuestWarning, checkGuestWarning, continueAsGuest, goToLogin } = useGuestWarning()
 
 const snakeGameRef = ref(null)
@@ -150,16 +151,23 @@ watch(selectedSpeed, (val) => localStorage.setItem('preferredSpeed', val))
 function resetSessionCounters() {
   sessionCounters.value = {
     foodEaten: 0,
+    diamondCount: 0,
+    ghostEats: 0,
     startedAt: Date.now()
   }
 }
 
 function onEatFood(payload = {}) {
-  playEatSound()
   if (!sessionCounters.value) return
 
   sessionCounters.value.foodEaten += 1
   sessionCounters.value.lastFoodType = payload.type || 'normal'
+  if (payload.type === 'diamond') {
+    sessionCounters.value.diamondCount += 1
+  }
+  if (payload.inGhost) {
+    sessionCounters.value.ghostEats += 1
+  }
 }
 
 function buildGameContext(finalScore, speedMult, scoreMult) {

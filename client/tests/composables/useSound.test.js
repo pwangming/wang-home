@@ -107,4 +107,62 @@ describe('useSound', () => {
       window.AudioContext = origAudioContext
     })
   })
+
+  describe('playSound()', () => {
+    it('should not create audio nodes when sound is disabled', async () => {
+      vi.resetModules()
+      global.localStorage.getItem = vi.fn(() => 'false')
+      const mockCtx = {
+        state: 'running',
+        currentTime: 0,
+        createOscillator: vi.fn(),
+        createGain: vi.fn(),
+        destination: 'audioDestination',
+        resume: vi.fn()
+      }
+      const origAudioContext = window.AudioContext
+      window.AudioContext = vi.fn(() => mockCtx)
+      const { useSound: freshUseSound } = await import('../../src/composables/useSound.js')
+
+      const { playSound } = freshUseSound()
+      playSound('coin')
+
+      expect(mockCtx.createOscillator).not.toHaveBeenCalled()
+      window.AudioContext = origAudioContext
+    })
+
+    it('should dispatch diamond to multiple synthesized tones', async () => {
+      vi.resetModules()
+      global.localStorage.getItem = vi.fn(() => 'true')
+      const mockOscillator = {
+        type: 'triangle',
+        frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn()
+      }
+      const mockGain = {
+        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn()
+      }
+      const mockCtx = {
+        state: 'running',
+        currentTime: 0,
+        createOscillator: vi.fn(() => mockOscillator),
+        createGain: vi.fn(() => mockGain),
+        destination: 'audioDestination',
+        resume: vi.fn()
+      }
+      const origAudioContext = window.AudioContext
+      window.AudioContext = vi.fn(() => mockCtx)
+      const { useSound: freshUseSound } = await import('../../src/composables/useSound.js')
+
+      const { playSound } = freshUseSound()
+      playSound('diamond')
+
+      expect(mockCtx.createOscillator).toHaveBeenCalledTimes(3)
+      expect(mockOscillator.start).toHaveBeenCalledTimes(3)
+      window.AudioContext = origAudioContext
+    })
+  })
 })
