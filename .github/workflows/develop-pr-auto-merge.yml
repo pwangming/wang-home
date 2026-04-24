@@ -1,27 +1,22 @@
-name: Dependabot auto-merge
+name: Develop PR auto-merge
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [develop, main]
+    branches: [develop]
 
 permissions:
   pull-requests: write
   contents: write
 
 jobs:
-  dependabot:
+  develop-pr:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.draft == false
     steps:
-      - name: Enable auto-merge & merge
+      - name: Enable squash auto-merge
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
-
-          # 1. Enable auto-merge on the PR
-          gh pr enable-automerge "$PR_NUM" --merge-method squash
-
-          # 2. Trigger merge (GitHub holds until CI passes if branch protection requires it)
           gh pr merge "$PR_NUM" --auto --squash --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
