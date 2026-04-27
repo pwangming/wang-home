@@ -227,6 +227,34 @@ describe('api.js', () => {
         body: JSON.stringify({ username: 'newname' })
       }))
     })
+
+    it('should call updatePassword with current and new passwords', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { message: 'Password updated successfully' } })
+      })
+
+      await api.auth.updatePassword('oldpass', 'newpassword')
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/update-password', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: 'oldpass', newPassword: 'newpassword' })
+      }))
+    })
+
+    it('should call updateEmail with current password and new email', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { message: 'Email confirmation sent' } })
+      })
+
+      await api.auth.updateEmail('oldpass', 'new@test.com')
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/update-email', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: 'oldpass', newEmail: 'new@test.com' })
+      }))
+    })
   })
 
   describe('api.leaderboard', () => {

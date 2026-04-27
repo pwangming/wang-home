@@ -1,11 +1,13 @@
 import Router from 'koa-router'
 import { supabase, createAnonClient } from '../lib/supabase.js'
 import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
-import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter, createResetRequestRateLimiter, createResetConfirmRateLimiter } from '../middleware/rateLimit.js'
+import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter, createResetRequestRateLimiter, createResetConfirmRateLimiter, createUpdatePasswordRateLimiter, createUpdateEmailRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 import { ok, fail } from '../lib/response.js'
 
 const REMEMBER_ME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+const INVALID_CURRENT_PASSWORD_MESSAGE = 'Current password is incorrect'
+const UPDATE_EMAIL_FAILED_MESSAGE = 'Unable to update email. Please check the address and try again.'
 
 function createAuthRouter() {
   const router = new Router({ prefix: '/api/auth' })
@@ -13,6 +15,24 @@ function createAuthRouter() {
   // Helper to normalize username
   function normalizeUsername(username) {
     return username.toLowerCase().trim().replace(/[^a-zA-Z0-9_]/g, '')
+  }
+
+  function normalizeEmail(email) {
+    return typeof email === 'string' ? email.trim().toLowerCase() : ''
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  async function verifyCurrentPassword(email, currentPassword) {
+    const reqClient = createAnonClient()
+    const { error } = await reqClient.auth.signInWithPassword({
+      email,
+      password: currentPassword
+    })
+
+    return !error
   }
 
   // POST /register
@@ -230,6 +250,81 @@ function createAuthRouter() {
 
     ok(ctx, { username: normalizedUsername })
   })
+
+  // POST /update-password
+  // Verifies the current password server-side before changing it.
+  router.post('/update-password',
+    authMiddleware,
+    createCsrfMiddleware(),
+    createUpdatePasswordRateLimiter(),
+    async (ctx) => {
+      const { currentPassword, newPassword } = ctx.request.body
+
+      if (!currentPassword || !newPassword) {
+        fail(ctx, 400, 'currentPassword and newPassword are required')
+        return
+      }
+
+      if (typeof newPassword !== 'string' || newPassword.length < 6) {
+        fail(ctx, 400, 'Password must be at least 6 characters')
+        return
+      }
+
+      const isCurrentPasswordValid = await verifyCurrentPassword(ctx.state.user.email, currentPassword)
+      if (!isCurrentPasswordValid) {
+        fail(ctx, 401, INVALID_CURRENT_PASSWORD_MESSAGE)
+        return
+      }
+
+      const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
+      const { error } = await userScopedClient.auth.updateUser({ password: newPassword })
+
+      if (error) {
+        fail(ctx, 400, error.message)
+        return
+      }
+
+      ok(ctx, { message: 'Password updated successfully' })
+    }
+  )
+
+  // POST /update-email
+  // Uses Supabase's default email-change flow, which sends confirmation mail.
+  router.post('/update-email',
+    authMiddleware,
+    createCsrfMiddleware(),
+    createUpdateEmailRateLimiter(),
+    async (ctx) => {
+      const { currentPassword, newEmail } = ctx.request.body
+      const normalizedEmail = normalizeEmail(newEmail)
+
+      if (!currentPassword || !newEmail) {
+        fail(ctx, 400, 'currentPassword and newEmail are required')
+        return
+      }
+
+      if (!isValidEmail(normalizedEmail)) {
+        fail(ctx, 400, 'Valid email is required')
+        return
+      }
+
+      const isCurrentPasswordValid = await verifyCurrentPassword(ctx.state.user.email, currentPassword)
+      if (!isCurrentPasswordValid) {
+        fail(ctx, 401, INVALID_CURRENT_PASSWORD_MESSAGE)
+        return
+      }
+
+      const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
+      const { error } = await userScopedClient.auth.updateUser({ email: normalizedEmail })
+
+      if (error) {
+        fail(ctx, 400, UPDATE_EMAIL_FAILED_MESSAGE)
+        return
+      }
+
+      ok(ctx, { message: 'Email confirmation sent' })
+    }
+  )
 
   // POST /callback
   // Exchanges a Supabase access token (from magic link hash) for a Koa session.

@@ -506,6 +506,141 @@ describe('Auth Routes', () => {
     })
   })
 
+  // ========== /api/auth/update-password ==========
+  describe('POST /api/auth/update-password', () => {
+    beforeEach(() => {
+      mockAuth.getUser.mockResolvedValue({ data: { user: { id: '123', email: 'test@test.com' } }, error: null })
+    })
+
+    test('returns 400 when required fields are missing', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-password', { currentPassword: 'oldpass' }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('currentPassword and newPassword are required')
+    })
+
+    test('returns 400 when new password is too short', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-password', {
+        currentPassword: 'oldpass',
+        newPassword: '123'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Password must be at least 6 characters')
+    })
+
+    test('returns 401 when current password is wrong', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: null, error: { message: 'Invalid login credentials' } })
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-password', {
+        currentPassword: 'wrongpass',
+        newPassword: 'newpassword'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(401)
+      expect(res.body.error).toBe('Current password is incorrect')
+      expect(mockAuth.updateUser).not.toHaveBeenCalled()
+    })
+
+    test('returns 200 and updates password on success', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-password', {
+        currentPassword: 'oldpass',
+        newPassword: 'newpassword'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(mockAuth.signInWithPassword).toHaveBeenCalledWith({ email: 'test@test.com', password: 'oldpass' })
+      expect(mockAuth.updateUser).toHaveBeenCalledWith({ password: 'newpassword' })
+    })
+
+    test('returns 429 after 5 update attempts from same user in 15min', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+
+      for (let i = 0; i < 5; i++) {
+        const res = await simulateRequest(app, 'POST', '/api/auth/update-password', {
+          currentPassword: 'oldpass',
+          newPassword: 'newpassword'
+        }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+        expect(res.status).toBe(200)
+      }
+
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-password', {
+        currentPassword: 'oldpass',
+        newPassword: 'newpassword'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(429)
+    })
+  })
+
+  // ========== /api/auth/update-email ==========
+  describe('POST /api/auth/update-email', () => {
+    beforeEach(() => {
+      mockAuth.getUser.mockResolvedValue({ data: { user: { id: '123', email: 'test@test.com' } }, error: null })
+    })
+
+    test('returns 400 when email is invalid', async () => {
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+        currentPassword: 'oldpass',
+        newEmail: 'not-an-email'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Valid email is required')
+    })
+
+    test('returns 401 when current password is wrong', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: null, error: { message: 'Invalid login credentials' } })
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+        currentPassword: 'wrongpass',
+        newEmail: 'new@test.com'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(401)
+      expect(res.body.error).toBe('Current password is incorrect')
+      expect(mockAuth.updateUser).not.toHaveBeenCalled()
+    })
+
+    test('returns 200 and sends email confirmation on success', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+        currentPassword: 'oldpass',
+        newEmail: ' New@Example.COM '
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(mockAuth.signInWithPassword).toHaveBeenCalledWith({ email: 'test@test.com', password: 'oldpass' })
+      expect(mockAuth.updateUser).toHaveBeenCalledWith({ email: 'new@example.com' })
+    })
+
+    test('returns 400 with generic error when Supabase rejects email update', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'User already registered' } })
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+        currentPassword: 'oldpass',
+        newEmail: 'taken@test.com'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('Unable to update email. Please check the address and try again.')
+    })
+
+    test('returns 429 after 5 update attempts from same user in 15min', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+
+      for (let i = 0; i < 5; i++) {
+        const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+          currentPassword: 'oldpass',
+          newEmail: `new${i}@test.com`
+        }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+        expect(res.status).toBe(200)
+      }
+
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+        currentPassword: 'oldpass',
+        newEmail: 'final@test.com'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+      expect(res.status).toBe(429)
+    })
+  })
+
   // ========== /api/auth/callback ==========
   describe('POST /api/auth/callback', () => {
     test('returns 400 when accessToken is missing', async () => {
