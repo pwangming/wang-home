@@ -172,6 +172,41 @@ describe('ProfileModal', () => {
       expect(wrapper.vm.securityErrors.confirmPassword).toBe('两次输入的新密码不一致')
       expect(api.auth.updatePassword).not.toHaveBeenCalled()
     })
+
+    it('should show errors when password form is incomplete', async () => {
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: true,
+          currentUsername: 'testuser'
+        }
+      })
+
+      wrapper.vm.passwordForm.currentPassword = ''
+      wrapper.vm.passwordForm.newPassword = '123'
+      wrapper.vm.passwordForm.confirmPassword = '123'
+      await wrapper.vm.handleUpdatePassword()
+
+      expect(wrapper.vm.securityErrors.currentPassword).toBe('请输入当前密码')
+      expect(wrapper.vm.securityErrors.newPassword).toBe('新密码至少 6 个字符')
+      expect(api.auth.updatePassword).not.toHaveBeenCalled()
+    })
+
+    it('should show errors when email form is incomplete or invalid', async () => {
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: true,
+          currentUsername: 'testuser'
+        }
+      })
+
+      wrapper.vm.emailForm.currentPassword = ''
+      wrapper.vm.emailForm.newEmail = 'not-an-email'
+      await wrapper.vm.handleUpdateEmail()
+
+      expect(wrapper.vm.securityErrors.emailCurrentPassword).toBe('请输入当前密码')
+      expect(wrapper.vm.securityErrors.newEmail).toBe('请输入有效邮箱')
+      expect(api.auth.updateEmail).not.toHaveBeenCalled()
+    })
   })
 
   describe('handleSubmit', () => {
@@ -310,6 +345,37 @@ describe('ProfileModal', () => {
       await wrapper.vm.handleUpdateEmail()
 
       expect(wrapper.vm.errorMessage).toBe('Unable to update email')
+    })
+
+    it('should reset security state when modal is reopened', async () => {
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: false,
+          currentUsername: 'testuser'
+        }
+      })
+
+      wrapper.vm.activeTab = 'security'
+      wrapper.vm.passwordForm.currentPassword = 'oldpass'
+      wrapper.vm.passwordForm.newPassword = 'newpassword'
+      wrapper.vm.passwordForm.confirmPassword = 'newpassword'
+      wrapper.vm.emailForm.currentPassword = 'oldpass'
+      wrapper.vm.emailForm.newEmail = 'new@test.com'
+      wrapper.vm.securityErrors.currentPassword = 'error'
+      wrapper.vm.errorMessage = 'error'
+      wrapper.vm.successMessage = 'success'
+
+      await wrapper.setProps({ show: true })
+
+      expect(wrapper.vm.activeTab).toBe('profile')
+      expect(wrapper.vm.passwordForm.currentPassword).toBe('')
+      expect(wrapper.vm.passwordForm.newPassword).toBe('')
+      expect(wrapper.vm.passwordForm.confirmPassword).toBe('')
+      expect(wrapper.vm.emailForm.currentPassword).toBe('')
+      expect(wrapper.vm.emailForm.newEmail).toBe('')
+      expect(wrapper.vm.securityErrors.currentPassword).toBe('')
+      expect(wrapper.vm.errorMessage).toBe('')
+      expect(wrapper.vm.successMessage).toBe('')
     })
   })
 
