@@ -5,6 +5,38 @@ import { useSound } from '../../src/composables/useSound.js'
 const originalLocalStorage = global.localStorage
 
 describe('useSound', () => {
+  function createAudioMock() {
+    const oscillators = []
+    const gains = []
+    const mockCtx = {
+      state: 'running',
+      currentTime: 0,
+      createOscillator: vi.fn(() => {
+        const oscillator = {
+          type: 'sine',
+          frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn()
+        }
+        oscillators.push(oscillator)
+        return oscillator
+      }),
+      createGain: vi.fn(() => {
+        const gain = {
+          gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+          connect: vi.fn()
+        }
+        gains.push(gain)
+        return gain
+      }),
+      destination: 'audioDestination',
+      resume: vi.fn()
+    }
+
+    return { mockCtx, oscillators, gains }
+  }
+
   beforeEach(() => {
     // Create a fresh localStorage mock for each test
     const store = {}
@@ -162,6 +194,27 @@ describe('useSound', () => {
 
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(3)
       expect(mockOscillator.start).toHaveBeenCalledTimes(3)
+      window.AudioContext = origAudioContext
+    })
+
+    it.each([
+      ['coin', 3, ['sine', 'sine', 'sine']],
+      ['slow', 1, ['sine']],
+      ['ghost', 1, ['sawtooth']]
+    ])('should dispatch %s to the expected synthesized tones', async (type, toneCount, waveTypes) => {
+      vi.resetModules()
+      global.localStorage.getItem = vi.fn(() => 'true')
+      const { mockCtx, oscillators } = createAudioMock()
+      const origAudioContext = window.AudioContext
+      window.AudioContext = vi.fn(() => mockCtx)
+      const { useSound: freshUseSound } = await import('../../src/composables/useSound.js')
+
+      const { playSound } = freshUseSound()
+      playSound(type)
+
+      expect(mockCtx.createOscillator).toHaveBeenCalledTimes(toneCount)
+      expect(oscillators.map(oscillator => oscillator.type)).toEqual(waveTypes)
+      expect(oscillators.every(oscillator => oscillator.start.mock.calls.length === 1)).toBe(true)
       window.AudioContext = origAudioContext
     })
   })
