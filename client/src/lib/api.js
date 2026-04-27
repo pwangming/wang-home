@@ -70,6 +70,10 @@ export const api = {
       request('/auth/reset-confirm', { method: 'POST', body: JSON.stringify({ accessToken, refreshToken, password }) }),
     updateProfile: (username) =>
       request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ username }) }),
+    updatePassword: (currentPassword, newPassword) =>
+      request('/auth/update-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
+    updateEmail: (currentPassword, newEmail) =>
+      request('/auth/update-email', { method: 'POST', body: JSON.stringify({ currentPassword, newEmail }) }),
     callback: (accessToken, refreshToken) =>
       request('/auth/callback', { method: 'POST', body: JSON.stringify({ accessToken, refreshToken }) })
   },
