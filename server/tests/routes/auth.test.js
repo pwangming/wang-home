@@ -61,6 +61,7 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
 const mockSessionMiddleware = jest.fn(async (ctx, next) => {
   if (!ctx.session) ctx.session = {}
   ctx.session.supabaseAccessToken = 'valid-token'
+  ctx.session.supabaseRefreshToken = 'valid-refresh-token'
   await next()
 })
 
@@ -81,6 +82,10 @@ describe('Auth Routes', () => {
     mockAuth.updateUser.mockReset()
     mockAuth.setSession.mockReset()
     mockAuth.getUser.mockResolvedValue({ data: { user: { id: 'test-id' } }, error: null })
+    mockAuth.setSession.mockResolvedValue({
+      data: { session: { access_token: 'valid-token', refresh_token: 'valid-refresh-token' } },
+      error: null
+    })
     mockFrom.mockReset()
   })
 
@@ -548,7 +553,25 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(mockAuth.signInWithPassword).toHaveBeenCalledWith({ email: 'test@test.com', password: 'oldpass' })
+      expect(mockAuth.setSession).toHaveBeenCalledWith({
+        access_token: 'valid-token',
+        refresh_token: 'valid-refresh-token'
+      })
       expect(mockAuth.updateUser).toHaveBeenCalledWith({ password: 'newpassword' })
+    })
+
+    test('returns 401 when Supabase auth session cannot be restored before password update', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.setSession.mockResolvedValue({ data: { session: null }, error: { message: 'Auth session missing!' } })
+
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-password', {
+        currentPassword: 'oldpass',
+        newPassword: 'newpassword'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+
+      expect(res.status).toBe(401)
+      expect(res.body.error).toBe('Invalid or expired token')
+      expect(mockAuth.updateUser).not.toHaveBeenCalled()
     })
 
     test('returns 429 after 5 update attempts from same user in 15min', async () => {
@@ -607,7 +630,25 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
       expect(mockAuth.signInWithPassword).toHaveBeenCalledWith({ email: 'test@test.com', password: 'oldpass' })
+      expect(mockAuth.setSession).toHaveBeenCalledWith({
+        access_token: 'valid-token',
+        refresh_token: 'valid-refresh-token'
+      })
       expect(mockAuth.updateUser).toHaveBeenCalledWith({ email: 'new@example.com' })
+    })
+
+    test('returns 401 when Supabase auth session cannot be restored before email update', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ data: { user: { id: '123' } }, error: null })
+      mockAuth.setSession.mockResolvedValue({ data: { session: null }, error: { message: 'Auth session missing!' } })
+
+      const res = await simulateRequest(app, 'POST', '/api/auth/update-email', {
+        currentPassword: 'oldpass',
+        newEmail: 'new@test.com'
+      }, { Cookie: 'session=valid-token' }, [mockSessionMiddleware])
+
+      expect(res.status).toBe(401)
+      expect(res.body.error).toBe('Invalid or expired token')
+      expect(mockAuth.updateUser).not.toHaveBeenCalled()
     })
 
     test('returns 400 with generic error when Supabase rejects email update', async () => {
