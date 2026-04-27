@@ -22,7 +22,24 @@ function createAuthRouter() {
   }
 
   function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (typeof email !== 'string' || email.length > 254) {
+      return false
+    }
+
+    const atIndex = email.indexOf('@')
+    if (atIndex <= 0 || atIndex !== email.lastIndexOf('@') || atIndex === email.length - 1) {
+      return false
+    }
+
+    for (const char of email) {
+      if (char <= ' ' || char === '\x7f') {
+        return false
+      }
+    }
+
+    const domain = email.slice(atIndex + 1)
+    const domainLabels = domain.split('.')
+    return domainLabels.length > 1 && domainLabels.every(label => label.length > 0)
   }
 
   async function verifyCurrentPassword(email, currentPassword) {
