@@ -86,6 +86,29 @@ describe('useAuthCallback', () => {
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
 
+  it('uses query callback type when Supabase returns tokens without type in hash', async () => {
+    history.replaceState(null, '', '/auth/callback?type=email_change#access_token=TOKEN123&refresh_token=REFRESH456')
+    const mockApi = {
+      auth: {
+        callback: vi.fn().mockResolvedValue({
+          user: { id: '1', email: 'new@b.com', username: 'testuser' }
+        })
+      }
+    }
+    const mockAuthStore = { user: null, _startHeartbeat: vi.fn() }
+    const mockMessage = { success: vi.fn(), error: vi.fn() }
+    const mockRouter = { push: vi.fn() }
+
+    const { handleCallback } = useAuthCallback({
+      api: mockApi, authStore: mockAuthStore, router: mockRouter, message: mockMessage
+    })
+    await handleCallback()
+
+    expect(mockApi.auth.callback).toHaveBeenCalledWith('TOKEN123', 'REFRESH456')
+    expect(mockAuthStore.user.email).toBe('new@b.com')
+    expect(mockMessage.success).toHaveBeenCalled()
+  })
+
   it('handles recovery callback type and redirects to reset password', async () => {
     window.location.hash = '#access_token=TOKEN123&refresh_token=REFRESH456&type=recovery'
     const mockApi = {
