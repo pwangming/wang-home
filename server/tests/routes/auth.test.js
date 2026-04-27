@@ -634,7 +634,10 @@ describe('Auth Routes', () => {
         access_token: 'valid-token',
         refresh_token: 'valid-refresh-token'
       })
-      expect(mockAuth.updateUser).toHaveBeenCalledWith({ email: 'new@example.com' })
+      expect(mockAuth.updateUser).toHaveBeenCalledWith(
+        { email: 'new@example.com' },
+        { emailRedirectTo: 'http://localhost:3000/auth/callback?type=email_change' }
+      )
     })
 
     test('returns 401 when Supabase auth session cannot be restored before email update', async () => {

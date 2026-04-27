@@ -4,6 +4,7 @@ const routes = [
   { path: '/', redirect: '/game' },
   { path: '/login', component: () => import('../views/LoginView.vue') },
   { path: '/register', component: () => import('../views/RegisterView.vue') },
+  { path: '/auth/callback', component: () => import('../views/AuthCallbackView.vue') },
   { path: '/reset-password', component: () => import('../views/ResetPasswordView.vue') },
   { path: '/game', component: () => import('../views/GameView.vue') }
 ]
