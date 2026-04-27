@@ -111,6 +111,22 @@ export function createResetConfirmRateLimiter() {
   })
 }
 
+export function createUpdatePasswordRateLimiter() {
+  return createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 5,
+    keyGenerator: (ctx) => `update-password:${ctx.state.user?.id || ctx.ip}`
+  })
+}
+
+export function createUpdateEmailRateLimiter() {
+  return createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 5,
+    keyGenerator: (ctx) => `update-email:${ctx.state.user?.id || ctx.ip}`
+  })
+}
+
 // Test-only: clear all in-memory rate limit stores to prevent state pollution
 export function __resetAll() {
   if (process.env.NODE_ENV !== 'test') return
