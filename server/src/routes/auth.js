@@ -52,6 +52,32 @@ function createAuthRouter() {
     return !error
   }
 
+  async function createSessionAuthClient(ctx) {
+    const accessToken = ctx.session?.supabaseAccessToken
+    const refreshToken = ctx.session?.supabaseRefreshToken
+
+    if (!accessToken || !refreshToken) {
+      return { client: null, error: new Error('Missing authenticated session') }
+    }
+
+    const reqClient = createAnonClient()
+    const { data, error } = await reqClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    })
+
+    if (error) {
+      return { client: null, error }
+    }
+
+    if (data.session) {
+      ctx.session.supabaseAccessToken = data.session.access_token
+      ctx.session.supabaseRefreshToken = data.session.refresh_token
+    }
+
+    return { client: reqClient, error: null }
+  }
+
   // POST /register
   router.post('/register',
     createCsrfMiddleware(),
@@ -293,8 +319,13 @@ function createAuthRouter() {
         return
       }
 
-      const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
-      const { error } = await userScopedClient.auth.updateUser({ password: newPassword })
+      const { client: authClient, error: sessionError } = await createSessionAuthClient(ctx)
+      if (sessionError) {
+        fail(ctx, 401, 'Invalid or expired token')
+        return
+      }
+
+      const { error } = await authClient.auth.updateUser({ password: newPassword })
 
       if (error) {
         fail(ctx, 400, error.message)
@@ -331,8 +362,13 @@ function createAuthRouter() {
         return
       }
 
-      const userScopedClient = createUserScopedClient(ctx.session.supabaseAccessToken)
-      const { error } = await userScopedClient.auth.updateUser({ email: normalizedEmail })
+      const { client: authClient, error: sessionError } = await createSessionAuthClient(ctx)
+      if (sessionError) {
+        fail(ctx, 401, 'Invalid or expired token')
+        return
+      }
+
+      const { error } = await authClient.auth.updateUser({ email: normalizedEmail })
 
       if (error) {
         fail(ctx, 400, UPDATE_EMAIL_FAILED_MESSAGE)
