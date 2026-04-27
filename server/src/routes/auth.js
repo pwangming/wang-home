@@ -368,7 +368,11 @@ function createAuthRouter() {
         return
       }
 
-      const { error } = await authClient.auth.updateUser({ email: normalizedEmail })
+      const redirectOrigin = ctx.headers.origin || 'https://client-inky-two.vercel.app'
+      const { error } = await authClient.auth.updateUser(
+        { email: normalizedEmail },
+        { emailRedirectTo: `${redirectOrigin}/auth/callback?type=email_change` }
+      )
 
       if (error) {
         fail(ctx, 400, UPDATE_EMAIL_FAILED_MESSAGE)
