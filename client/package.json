@@ -14,11 +14,11 @@
     "lint:fix": "eslint --fix \"src/**/*.{js,vue}\" \"tests/**/*.js\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.103.3",
+    "@supabase/supabase-js": "^2.104.1",
     "@vicons/ionicons5": "^0.13.0",
     "naive-ui": "^2.38.0",
     "pinia": "^2.1.0",
-    "vue": "^3.4.0",
+    "vue": "^3.5.33",
     "vue-router": "^4.2.0"
   },
   "devDependencies": {
