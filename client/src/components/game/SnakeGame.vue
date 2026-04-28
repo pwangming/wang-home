@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="snake-game">
+  <div ref="containerRef" class="snake-game" :style="skinStyle">
     <canvas
       ref="canvasRef"
       :width="canvasSize"
@@ -17,6 +17,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { FOOD_TYPES, pickFoodType } from '../../lib/food.js'
+import { useSkinStore } from '../../stores/skin.js'
 
 const props = defineProps({
   speedMultiplier: {
@@ -30,6 +31,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['gameOver', 'eatFood', 'scoreUpdate', 'playSound'])
+const skinStore = useSkinStore()
+const activeSkin = computed(() => skinStore.activeSkin)
+const skinStyle = computed(() => ({
+  '--game-skin-accent': activeSkin.value.snakeHead,
+  '--game-skin-glow': `${activeSkin.value.snakeHead}4d`
+}))
 
 // Canvas setup
 const canvasRef = ref(null)
@@ -112,11 +119,11 @@ function draw() {
   const size = canvasSize.value
 
   // Clear canvas
-  ctx.fillStyle = '#1a1a2e'
+  ctx.fillStyle = activeSkin.value.bg
   ctx.fillRect(0, 0, size, size)
 
   // Draw grid (subtle)
-  ctx.strokeStyle = '#2a2a4e'
+  ctx.strokeStyle = activeSkin.value.grid
   ctx.lineWidth = 0.5
   for (let x = 0; x <= size; x += gridSize) {
     ctx.beginPath()
@@ -141,8 +148,9 @@ function draw() {
     gridSize / 2
   )
   const foodType = food.value.type || FOOD_TYPES.NORMAL
-  foodGradient.addColorStop(0, foodType.color)
-  foodGradient.addColorStop(1, foodType.color)
+  const foodColor = activeSkin.value.food[foodType.id] || foodType.color
+  foodGradient.addColorStop(0, foodColor)
+  foodGradient.addColorStop(1, foodColor)
   ctx.fillStyle = foodGradient
   ctx.beginPath()
   ctx.arc(food.value.x + gridSize / 2, food.value.y + gridSize / 2, gridSize / 2 - 2, 0, Math.PI * 2)
@@ -151,18 +159,15 @@ function draw() {
   // Draw snake
   snake.value.forEach((segment, index) => {
     const isHead = index === 0
-    const brightness = 1 - (index / snake.value.length) * 0.5
-    const g = Math.floor(200 * brightness)
-    const r = Math.floor(100 * brightness)
 
     if (isHead) {
       // Head with glow
-      ctx.shadowColor = '#4ade80'
+      ctx.shadowColor = activeSkin.value.snakeHead
       ctx.shadowBlur = 10
-      ctx.fillStyle = '#4ade80'
+      ctx.fillStyle = activeSkin.value.snakeHead
     } else {
       ctx.shadowBlur = 0
-      ctx.fillStyle = `rgb(${r}, ${g}, 80)`
+      ctx.fillStyle = activeSkin.value.snake
     }
 
     ctx.beginPath()
@@ -337,6 +342,10 @@ defineExpose({
 // Watch for score changes and emit to parent
 watch(score, (v) => emit('scoreUpdate', v))
 
+watch(activeSkin, () => {
+  draw()
+})
+
 // Watch for speed changes during game
 watch([() => props.speedMultiplier, activeSpeedBuff], () => {
   if (isGameRunning.value) {
@@ -383,9 +392,9 @@ onUnmounted(() => {
 
 canvas {
   outline: none;
-  border: 2px solid #4ade80;
+  border: 2px solid var(--game-skin-accent);
   border-radius: 4px;
-  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 20px var(--game-skin-glow);
 }
 
 .pause-overlay {

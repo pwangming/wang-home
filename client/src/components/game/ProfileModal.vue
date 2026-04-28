@@ -29,6 +29,32 @@
         </n-form>
       </n-tab-pane>
 
+      <n-tab-pane name="skins" tab="皮肤">
+        <div class="skin-panel" data-testid="profile-skin-panel">
+          <button
+            v-for="skin in skinList"
+            :key="skin.id"
+            type="button"
+            class="skin-option"
+            :class="{ active: skin.id === activeSkinId, locked: isSkinLocked(skin) }"
+            :data-testid="`skin-option-${skin.id}`"
+            :disabled="isSkinLocked(skin)"
+            @click="selectSkin(skin.id)"
+          >
+            <span class="skin-preview" :style="{ background: skin.bg, borderColor: skin.snakeHead }">
+              <span class="skin-preview__snake" :style="{ background: skin.snakeHead }"></span>
+              <span class="skin-preview__food" :style="{ background: skin.food.coin }"></span>
+            </span>
+            <span class="skin-meta">
+              <span class="skin-name">{{ skin.name }}</span>
+              <span class="skin-status">
+                {{ isSkinLocked(skin) ? (skin.unlockLabel || '暂未开放') : (skin.id === activeSkinId ? '使用中' : '可使用') }}
+              </span>
+            </span>
+          </button>
+        </div>
+      </n-tab-pane>
+
       <n-tab-pane name="security" tab="账号安全">
         <div class="security-panel" data-testid="profile-security-panel">
           <n-form :model="passwordForm" @submit.prevent="handleUpdatePassword">
@@ -154,9 +180,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import NeonInput from '../ui/NeonInput.vue'
 import { api } from '../../lib/api.js'
+import { useSkinStore } from '../../stores/skin.js'
 
 const props = defineProps({
   show: {
@@ -177,6 +204,9 @@ const isUpdatingEmail = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const activeTab = ref('profile')
+const skinStore = useSkinStore()
+const skinList = computed(() => skinStore.allSkins)
+const activeSkinId = computed(() => skinStore.activeSkin.id)
 
 const form = reactive({ username: '' })
 const errors = reactive({ username: '' })
@@ -280,6 +310,14 @@ function validateEmailForm() {
   }
 
   return valid
+}
+
+function isSkinLocked(skin) {
+  return !skinStore.availableSkins.some((availableSkin) => availableSkin.id === skin.id)
+}
+
+function selectSkin(skinId) {
+  skinStore.setActive(skinId)
 }
 
 async function handleSubmit() {
@@ -410,5 +448,93 @@ function onClose() {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary, #303133);
+}
+
+.skin-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skin-option {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 76px;
+  padding: 10px;
+  background: var(--input-bg, #f5f7fa);
+  border: 1px solid var(--card-border, #dcdfe6);
+  border-radius: 8px;
+  color: var(--text-primary, #303133);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+
+.skin-option.active {
+  border-color: var(--neon-green, #4ade80);
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+}
+
+.skin-option.locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.skin-preview {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border: 2px solid;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.skin-preview__snake,
+.skin-preview__food {
+  position: absolute;
+  display: block;
+}
+
+.skin-preview__snake {
+  left: 10px;
+  top: 24px;
+  width: 28px;
+  height: 10px;
+  border-radius: 4px;
+}
+
+.skin-preview__food {
+  right: 9px;
+  top: 9px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.skin-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.skin-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #303133);
+  overflow-wrap: anywhere;
+}
+
+.skin-status {
+  font-size: 12px;
+  color: var(--text-secondary, #909399);
+}
+
+@media (max-width: 520px) {
+  .skin-panel {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
