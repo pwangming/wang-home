@@ -597,9 +597,16 @@ onBeforeUnmount(() => {
   }
 
   .topbar-login-btn,
-  .topbar-user,
   .topbar-logout-btn {
     display: none;
+  }
+
+  .topbar-user {
+    display: flex;
+  }
+
+  .topbar-username {
+    max-width: clamp(96px, 34vw, 150px);
   }
 }
 

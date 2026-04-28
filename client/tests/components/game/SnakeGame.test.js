@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import SnakeGame from '../../../src/components/game/SnakeGame.vue'
 import { FOOD_TYPES } from '../../../src/lib/food.js'
+import { useSkinStore } from '../../../src/stores/skin.js'
 
 // jsdom does not provide ResizeObserver
 global.ResizeObserver = vi.fn(() => ({
@@ -11,13 +13,25 @@ global.ResizeObserver = vi.fn(() => ({
 }))
 
 describe('SnakeGame', () => {
+  let fillStyles
+  let gradientStops
+
   beforeEach(() => {
+    setActivePinia(createPinia())
+    fillStyles = []
+    gradientStops = []
+
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-      fillStyle: '',
       strokeStyle: '',
       lineWidth: 0,
       shadowColor: '',
       shadowBlur: 0,
+      set fillStyle(value) {
+        fillStyles.push(value)
+      },
+      get fillStyle() {
+        return fillStyles[fillStyles.length - 1]
+      },
       font: '',
       fillRect: vi.fn(),
       beginPath: vi.fn(),
@@ -29,7 +43,7 @@ describe('SnakeGame', () => {
       roundRect: vi.fn(),
       fillText: vi.fn(),
       createRadialGradient: vi.fn(() => ({
-        addColorStop: vi.fn()
+        addColorStop: vi.fn((offset, color) => gradientStops.push([offset, color]))
       }))
     }))
   })
@@ -110,6 +124,29 @@ describe('SnakeGame', () => {
 
     expect(wrapper.emitted('gameOver')).toBeFalsy()
     expect(wrapper.vm.snake[0]).toEqual({ x: 380, y: 0 })
+    wrapper.unmount()
+  })
+
+  it('draws with the active skin colors', () => {
+    const skinStore = useSkinStore()
+    skinStore.setActive('retro')
+    const wrapper = mount(SnakeGame, {
+      props: { speedMultiplier: 1, scoreMultiplier: 1 }
+    })
+
+    wrapper.vm.snake = [
+      { x: 40, y: 40 },
+      { x: 20, y: 40 }
+    ]
+    wrapper.vm.food = { x: 80, y: 80, type: FOOD_TYPES.COIN }
+    wrapper.vm.draw()
+
+    expect(fillStyles).toContain('#000000')
+    expect(fillStyles).toContain('#ccff00')
+    expect(fillStyles).toContain('#76ff03')
+    expect(gradientStops).toContainEqual([0, '#ffeb3b'])
+    expect(gradientStops).toContainEqual([1, '#ffeb3b'])
+
     wrapper.unmount()
   })
 })

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
+import { setActivePinia, createPinia } from 'pinia'
+import { useSkinStore } from '../../src/stores/skin.js'
 
 // Mock naive-ui components
 vi.mock('naive-ui', () => ({
@@ -96,6 +98,8 @@ import { api } from '../../src/lib/api.js'
 describe('ProfileModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
+    setActivePinia(createPinia())
   })
 
   describe('rendering', () => {
@@ -110,7 +114,7 @@ describe('ProfileModal', () => {
       expect(wrapper.text()).toContain('testuser')
     })
 
-    it('should render profile and security tabs', () => {
+    it('should render profile, skin, and security tabs', () => {
       const wrapper = mount(ProfileModal, {
         props: {
           show: true,
@@ -120,8 +124,24 @@ describe('ProfileModal', () => {
 
       expect(wrapper.find('[data-testid="profile-tabs"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="tab-profile"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="tab-skins"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="tab-security"]').exists()).toBe(true)
       expect(wrapper.vm.activeTab).toBe('profile')
+    })
+
+    it('should render skin options with locked placeholders', () => {
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: true,
+          currentUsername: 'testuser'
+        }
+      })
+
+      expect(wrapper.find('[data-testid="profile-skin-panel"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="skin-option-default"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="skin-option-retro"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="skin-option-neon_v1"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="skin-option-monochrome"]').attributes('disabled')).toBeDefined()
     })
 
     it('should render security tab forms', () => {
@@ -376,6 +396,37 @@ describe('ProfileModal', () => {
       expect(wrapper.vm.securityErrors.currentPassword).toBe('')
       expect(wrapper.vm.errorMessage).toBe('')
       expect(wrapper.vm.successMessage).toBe('')
+    })
+  })
+
+  describe('skin selection', () => {
+    it('should switch active skin when a free skin is selected', async () => {
+      const skinStore = useSkinStore()
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: true,
+          currentUsername: 'testuser'
+        }
+      })
+
+      await wrapper.find('[data-testid="skin-option-retro"]').trigger('click')
+
+      expect(skinStore.activeSkinId).toBe('retro')
+      expect(localStorage.getItem('activeSkin')).toBe('retro')
+    })
+
+    it('should not switch active skin when a locked skin is selected directly', async () => {
+      const skinStore = useSkinStore()
+      const wrapper = mount(ProfileModal, {
+        props: {
+          show: true,
+          currentUsername: 'testuser'
+        }
+      })
+
+      wrapper.vm.selectSkin('neon_v1')
+
+      expect(skinStore.activeSkinId).toBe('default')
     })
   })
 
