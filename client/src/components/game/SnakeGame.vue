@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="snake-game">
+  <div ref="containerRef" class="snake-game" :style="skinStyle">
     <canvas
       ref="canvasRef"
       :width="canvasSize"
@@ -16,6 +16,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { FOOD_TYPES, pickFoodType } from '../../lib/food.js'
+import { useSkinStore } from '../../stores/skin.js'
 
 const props = defineProps({
   speedMultiplier: {
@@ -28,7 +30,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['gameOver', 'eatFood', 'scoreUpdate'])
+const emit = defineEmits(['gameOver', 'eatFood', 'scoreUpdate', 'playSound'])
+const skinStore = useSkinStore()
+const activeSkin = computed(() => skinStore.activeSkin)
+const skinStyle = computed(() => ({
+  '--game-skin-accent': activeSkin.value.snakeHead,
+  '--game-skin-glow': `${activeSkin.value.snakeHead}4d`
+}))
 
 // Canvas setup
 const canvasRef = ref(null)
@@ -47,19 +55,22 @@ function updateCanvasSize() {
 
 // Game state
 const snake = ref([])
-const food = ref({ x: 0, y: 0 })
+const food = ref({ x: 0, y: 0, type: FOOD_TYPES.NORMAL })
 const direction = ref('right')
 const score = ref(0)
 const gameLoopId = ref(null)
 const isGameRunning = ref(false)
 const isPaused = ref(false)
+const activeSpeedBuff = ref(1)
+const isGhost = ref(false)
+const activeBuffTimers = ref([])
 
 // Base game speed (ms per tick)
 const baseSpeed = 150
 
 // Computed game speed based on multiplier
 const gameSpeed = computed(() => {
-  return baseSpeed / props.speedMultiplier
+  return baseSpeed / (props.speedMultiplier * activeSpeedBuff.value)
 })
 
 // Direction opposites to prevent 180-degree turns
@@ -81,12 +92,14 @@ function initGame() {
   ]
   direction.value = 'right'
   score.value = 0
+  clearAllBuffTimers()
   placeFood()
 }
 
 // Place food at random position
 function placeFood() {
   const maxCells = Math.floor(canvasSize.value / gridSize)
+  const type = pickFoodType()
   let newFood
   do {
     newFood = {
@@ -94,7 +107,7 @@ function placeFood() {
       y: Math.floor(Math.random() * maxCells) * gridSize
     }
   } while (snake.value.some(segment => segment.x === newFood.x && segment.y === newFood.y))
-  food.value = newFood
+  food.value = { ...newFood, type }
 }
 
 // Draw game on canvas
@@ -106,11 +119,11 @@ function draw() {
   const size = canvasSize.value
 
   // Clear canvas
-  ctx.fillStyle = '#1a1a2e'
+  ctx.fillStyle = activeSkin.value.bg
   ctx.fillRect(0, 0, size, size)
 
   // Draw grid (subtle)
-  ctx.strokeStyle = '#2a2a4e'
+  ctx.strokeStyle = activeSkin.value.grid
   ctx.lineWidth = 0.5
   for (let x = 0; x <= size; x += gridSize) {
     ctx.beginPath()
@@ -134,8 +147,10 @@ function draw() {
     food.value.y + gridSize / 2,
     gridSize / 2
   )
-  foodGradient.addColorStop(0, '#ff6b6b')
-  foodGradient.addColorStop(1, '#c92a2a')
+  const foodType = food.value.type || FOOD_TYPES.NORMAL
+  const foodColor = activeSkin.value.food[foodType.id] || foodType.color
+  foodGradient.addColorStop(0, foodColor)
+  foodGradient.addColorStop(1, foodColor)
   ctx.fillStyle = foodGradient
   ctx.beginPath()
   ctx.arc(food.value.x + gridSize / 2, food.value.y + gridSize / 2, gridSize / 2 - 2, 0, Math.PI * 2)
@@ -144,18 +159,15 @@ function draw() {
   // Draw snake
   snake.value.forEach((segment, index) => {
     const isHead = index === 0
-    const brightness = 1 - (index / snake.value.length) * 0.5
-    const g = Math.floor(200 * brightness)
-    const r = Math.floor(100 * brightness)
 
     if (isHead) {
       // Head with glow
-      ctx.shadowColor = '#4ade80'
+      ctx.shadowColor = activeSkin.value.snakeHead
       ctx.shadowBlur = 10
-      ctx.fillStyle = '#4ade80'
+      ctx.fillStyle = activeSkin.value.snakeHead
     } else {
       ctx.shadowBlur = 0
-      ctx.fillStyle = `rgb(${r}, ${g}, 80)`
+      ctx.fillStyle = activeSkin.value.snake
     }
 
     ctx.beginPath()
@@ -189,14 +201,16 @@ function tick() {
     case 'right': head.x += gridSize; break
   }
 
-  // Check wall collision
-  if (head.x < 0 || head.x >= canvasSize.value || head.y < 0 || head.y >= canvasSize.value) {
+  if (isGhost.value) {
+    head.x = (head.x + canvasSize.value) % canvasSize.value
+    head.y = (head.y + canvasSize.value) % canvasSize.value
+  } else if (head.x < 0 || head.x >= canvasSize.value || head.y < 0 || head.y >= canvasSize.value) {
     handleGameOver()
     return
   }
 
   // Check self collision
-  if (snake.value.some(segment => segment.x === head.x && segment.y === head.y)) {
+  if (!isGhost.value && snake.value.some(segment => segment.x === head.x && segment.y === head.y)) {
     handleSelfCollision()
     return
   }
@@ -217,9 +231,41 @@ function tick() {
 
 // Handle eating food
 function handleEatFood() {
-  score.value += Math.round(1 * props.scoreMultiplier)
-  emit('eatFood')
+  const type = food.value.type || FOOD_TYPES.NORMAL
+  const gained = Math.round(type.score * props.scoreMultiplier)
+  const inGhost = isGhost.value
+  score.value += gained
+  emit('eatFood', { type: type.id, score: gained, inGhost })
+  emit('playSound', type.id)
+  if (type.effect) {
+    applyEffect(type.effect)
+  }
   placeFood()
+}
+
+function applyEffect(effect) {
+  if (effect.type === 'speed') {
+    activeSpeedBuff.value = effect.multiplier
+    const timer = setTimeout(() => {
+      activeSpeedBuff.value = 1
+    }, effect.durationMs)
+    activeBuffTimers.value.push(timer)
+  }
+
+  if (effect.type === 'ghost') {
+    isGhost.value = true
+    const timer = setTimeout(() => {
+      isGhost.value = false
+    }, effect.durationMs)
+    activeBuffTimers.value.push(timer)
+  }
+}
+
+function clearAllBuffTimers() {
+  activeBuffTimers.value.forEach(clearTimeout)
+  activeBuffTimers.value = []
+  activeSpeedBuff.value = 1
+  isGhost.value = false
 }
 
 // Handle wall collision
@@ -235,6 +281,7 @@ function handleSelfCollision() {
 // Handle game over
 function handleGameOver() {
   isGameRunning.value = false
+  clearAllBuffTimers()
   if (gameLoopId.value) {
     clearInterval(gameLoopId.value)
     gameLoopId.value = null
@@ -295,8 +342,12 @@ defineExpose({
 // Watch for score changes and emit to parent
 watch(score, (v) => emit('scoreUpdate', v))
 
+watch(activeSkin, () => {
+  draw()
+})
+
 // Watch for speed changes during game
-watch(() => props.speedMultiplier, () => {
+watch([() => props.speedMultiplier, activeSpeedBuff], () => {
   if (isGameRunning.value) {
     clearInterval(gameLoopId.value)
     gameLoopId.value = setInterval(tick, gameSpeed.value)
@@ -323,6 +374,7 @@ onUnmounted(() => {
   if (gameLoopId.value) {
     clearInterval(gameLoopId.value)
   }
+  clearAllBuffTimers()
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
@@ -340,9 +392,9 @@ onUnmounted(() => {
 
 canvas {
   outline: none;
-  border: 2px solid #4ade80;
+  border: 2px solid var(--game-skin-accent);
   border-radius: 4px;
-  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 20px var(--game-skin-glow);
 }
 
 .pause-overlay {

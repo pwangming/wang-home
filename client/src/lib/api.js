@@ -70,6 +70,10 @@ export const api = {
       request('/auth/reset-confirm', { method: 'POST', body: JSON.stringify({ accessToken, refreshToken, password }) }),
     updateProfile: (username) =>
       request('/auth/profile', { method: 'PATCH', body: JSON.stringify({ username }) }),
+    updatePassword: (currentPassword, newPassword) =>
+      request('/auth/update-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
+    updateEmail: (currentPassword, newEmail) =>
+      request('/auth/update-email', { method: 'POST', body: JSON.stringify({ currentPassword, newEmail }) }),
     callback: (accessToken, refreshToken) =>
       request('/auth/callback', { method: 'POST', body: JSON.stringify({ accessToken, refreshToken }) })
   },
@@ -77,8 +81,6 @@ export const api = {
     list: (page = 1, pageSize = 20) =>
       request(`/leaderboard?page=${page}&pageSize=${pageSize}`),
     getMyRank: () => request('/leaderboard/rank/me'),
-    startSession: (speedMultiplier) =>
-      request('/game-sessions/start', { method: 'POST', body: JSON.stringify({ speedMultiplier }) }),
     submitScore: (sessionId, score, speedMultiplier, scoreMultiplier, endedAt, durationMs) =>
       request('/leaderboard', {
         method: 'POST',

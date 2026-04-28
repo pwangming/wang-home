@@ -16,6 +16,7 @@ export function useGameSession({ snakeGameRef, onScoreSubmitted } = {}) {
   const bestScore = ref(null)
   const submitStatus = ref('')
   const submitMessage = ref('')
+  const lastGameContext = ref(null)
 
   let submitStatusTimer = null
 
@@ -32,23 +33,17 @@ export function useGameSession({ snakeGameRef, onScoreSubmitted } = {}) {
   }
 
   async function startGame() {
-    if (authStore.user) {
-      try {
-        await api.leaderboard.startSession(selectedSpeed.value)
-      } catch {
-        // session start failure is non-blocking
-      }
-    }
     isPlaying.value = true
     currentScore.value = 0
     await nextTick()
     resolveSnakeGame()?.startGame()
   }
 
-  async function handleGameOver(finalScore, speedMult, scoreMult) {
+  async function handleGameOver(finalScore, speedMult, scoreMult, gameContext = null) {
     isPlaying.value = false
     currentScore.value = finalScore
     lastGameScore.value = finalScore
+    lastGameContext.value = gameContext
 
     if (!authStore.user) {
       message.warning('未登录状态下分数不会被记录')
@@ -119,6 +114,7 @@ export function useGameSession({ snakeGameRef, onScoreSubmitted } = {}) {
     bestScore,
     submitStatus,
     submitMessage,
+    lastGameContext,
     currentScoreMultiplier,
     startGame,
     handleGameOver,

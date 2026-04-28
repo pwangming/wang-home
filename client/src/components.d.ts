@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AuthCallbackHandler: typeof import('./components/AuthCallbackHandler.vue')['default']
     GameSidebar: typeof import('./components/game/GameSidebar.vue')['default']
     LeaderboardModal: typeof import('./components/game/LeaderboardModal.vue')['default']
     NAlert: typeof import('naive-ui')['NAlert']
@@ -23,6 +24,8 @@ declare module 'vue' {
     NForm: typeof import('naive-ui')['NForm']
     NMessageProvider: typeof import('naive-ui')['NMessageProvider']
     NModal: typeof import('naive-ui')['NModal']
+    NTabPane: typeof import('naive-ui')['NTabPane']
+    NTabs: typeof import('naive-ui')['NTabs']
     ProfileModal: typeof import('./components/game/ProfileModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

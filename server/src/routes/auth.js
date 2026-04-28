@@ -1,11 +1,13 @@
 import Router from 'koa-router'
 import { supabase, createAnonClient } from '../lib/supabase.js'
 import { createUserScopedClient, authMiddleware } from '../middleware/auth.js'
-import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter, createResetRequestRateLimiter, createResetConfirmRateLimiter } from '../middleware/rateLimit.js'
+import { createLoginRateLimiter, createRegisterRateLimiter, createCallbackRateLimiter, createResetRequestRateLimiter, createResetConfirmRateLimiter, createUpdatePasswordRateLimiter, createUpdateEmailRateLimiter } from '../middleware/rateLimit.js'
 import { createCsrfMiddleware } from '../middleware/csrf.js'
 import { ok, fail } from '../lib/response.js'
 
 const REMEMBER_ME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+const INVALID_CURRENT_PASSWORD_MESSAGE = 'Current password is incorrect'
+const UPDATE_EMAIL_FAILED_MESSAGE = 'Unable to update email. Please check the address and try again.'
 
 function createAuthRouter() {
   const router = new Router({ prefix: '/api/auth' })
@@ -13,6 +15,67 @@ function createAuthRouter() {
   // Helper to normalize username
   function normalizeUsername(username) {
     return username.toLowerCase().trim().replace(/[^a-zA-Z0-9_]/g, '')
+  }
+
+  function normalizeEmail(email) {
+    return typeof email === 'string' ? email.trim().toLowerCase() : ''
+  }
+
+  function isValidEmail(email) {
+    if (typeof email !== 'string' || email.length > 254) {
+      return false
+    }
+
+    const atIndex = email.indexOf('@')
+    if (atIndex <= 0 || atIndex !== email.lastIndexOf('@') || atIndex === email.length - 1) {
+      return false
+    }
+
+    for (const char of email) {
+      if (char <= ' ' || char === '\x7f') {
+        return false
+      }
+    }
+
+    const domain = email.slice(atIndex + 1)
+    const domainLabels = domain.split('.')
+    return domainLabels.length > 1 && domainLabels.every(label => label.length > 0)
+  }
+
+  async function verifyCurrentPassword(email, currentPassword) {
+    const reqClient = createAnonClient()
+    const { error } = await reqClient.auth.signInWithPassword({
+      email,
+      password: currentPassword
+    })
+
+    return !error
+  }
+
+  async function createSessionAuthClient(ctx) {
+    const accessToken = ctx.session?.supabaseAccessToken
+    const refreshToken = ctx.session?.supabaseRefreshToken
+
+    if (!accessToken || !refreshToken) {
+      return { client: null, error: new Error('Missing authenticated session') }
+    }
+
+    const reqClient = createAnonClient()
+    const { data, error } = await reqClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    })
+
+    if (error) {
+      return { client: null, error }
+    }
+
+    if (data.session) {
+      ctx.session.supabaseAccessToken = data.session.access_token
+      ctx.session.supabaseRefreshToken = data.session.refresh_token
+    }
+
+    return { client: reqClient, error: null }
   }
 
   // POST /register
@@ -230,6 +293,95 @@ function createAuthRouter() {
 
     ok(ctx, { username: normalizedUsername })
   })
+
+  // POST /update-password
+  // Verifies the current password server-side before changing it.
+  router.post('/update-password',
+    authMiddleware,
+    createCsrfMiddleware(),
+    createUpdatePasswordRateLimiter(),
+    async (ctx) => {
+      const { currentPassword, newPassword } = ctx.request.body
+
+      if (!currentPassword || !newPassword) {
+        fail(ctx, 400, 'currentPassword and newPassword are required')
+        return
+      }
+
+      if (typeof newPassword !== 'string' || newPassword.length < 6) {
+        fail(ctx, 400, 'Password must be at least 6 characters')
+        return
+      }
+
+      const isCurrentPasswordValid = await verifyCurrentPassword(ctx.state.user.email, currentPassword)
+      if (!isCurrentPasswordValid) {
+        fail(ctx, 401, INVALID_CURRENT_PASSWORD_MESSAGE)
+        return
+      }
+
+      const { client: authClient, error: sessionError } = await createSessionAuthClient(ctx)
+      if (sessionError) {
+        fail(ctx, 401, 'Invalid or expired token')
+        return
+      }
+
+      const { error } = await authClient.auth.updateUser({ password: newPassword })
+
+      if (error) {
+        fail(ctx, 400, error.message)
+        return
+      }
+
+      ok(ctx, { message: 'Password updated successfully' })
+    }
+  )
+
+  // POST /update-email
+  // Uses Supabase's default email-change flow, which sends confirmation mail.
+  router.post('/update-email',
+    authMiddleware,
+    createCsrfMiddleware(),
+    createUpdateEmailRateLimiter(),
+    async (ctx) => {
+      const { currentPassword, newEmail } = ctx.request.body
+      const normalizedEmail = normalizeEmail(newEmail)
+
+      if (!currentPassword || !newEmail) {
+        fail(ctx, 400, 'currentPassword and newEmail are required')
+        return
+      }
+
+      if (!isValidEmail(normalizedEmail)) {
+        fail(ctx, 400, 'Valid email is required')
+        return
+      }
+
+      const isCurrentPasswordValid = await verifyCurrentPassword(ctx.state.user.email, currentPassword)
+      if (!isCurrentPasswordValid) {
+        fail(ctx, 401, INVALID_CURRENT_PASSWORD_MESSAGE)
+        return
+      }
+
+      const { client: authClient, error: sessionError } = await createSessionAuthClient(ctx)
+      if (sessionError) {
+        fail(ctx, 401, 'Invalid or expired token')
+        return
+      }
+
+      const redirectOrigin = ctx.headers.origin || 'https://client-inky-two.vercel.app'
+      const { error } = await authClient.auth.updateUser(
+        { email: normalizedEmail },
+        { emailRedirectTo: `${redirectOrigin}/auth/callback?type=email_change` }
+      )
+
+      if (error) {
+        fail(ctx, 400, UPDATE_EMAIL_FAILED_MESSAGE)
+        return
+      }
+
+      ok(ctx, { message: 'Email confirmation sent' })
+    }
+  )
 
   // POST /callback
   // Exchanges a Supabase access token (from magic link hash) for a Koa session.
