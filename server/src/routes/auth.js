@@ -418,7 +418,7 @@ function createAuthRouter() {
   })
 
   // POST /logout
-  router.post('/logout', async (ctx) => {
+  router.post('/logout', createCsrfMiddleware(), async (ctx) => {
     // Clear session regardless of Supabase result
     try {
       if (ctx.session && ctx.session.supabaseAccessToken) {
