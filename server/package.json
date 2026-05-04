@@ -12,7 +12,7 @@
     "lint:fix": "eslint --fix \"src/**/*.js\" \"tests/**/*.js\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.103.3",
+    "@supabase/supabase-js": "^2.105.1",
     "dotenv": "^16.4.5",
     "koa": "^2.15.0",
     "koa-bodyparser": "^4.4.0",
