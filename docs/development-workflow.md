@@ -130,13 +130,16 @@ gh pr merge --auto --squash --delete-branch
 
 ## 7. 生成文件策略
 
-`client/src/components.d.ts`、`client/src/auto-imports.d.ts` 等工具生成的类型声明文件不要手工编辑其内容。
+`client/src/components.d.ts`、`client/src/auto-imports.d.ts` 等工具生成的类型声明文件不要手工编辑其内容；由 `unplugin-vue-components` / `unplugin-auto-import` 在 vite dev/build 时维护。
+
+**当前约定**：这两个文件保持 track 状态（不进 `.gitignore`），由 `.gitattributes` 锁 `eol=lf`，避免 Windows `core.autocrlf=true` 触发的伪 modified。
 
 - 出现 diff 时先确认来源：依赖更新、组件注册、自动导入、本地生成命令等
-- 当代码改动确实影响组件或自动导入类型时，可以随对应功能一起提交生成文件变更，并在汇报中标明来源
-- 当生成文件 diff 与当前任务无关时，保留现场，在汇报中列为"既有未提交改动"，不顺手提交、不还原
-- 是否提交生成文件以项目当前约定为准；未定约定前不新增 `.gitignore` 规则、不批量删除生成文件
-- 后续如要把生成文件改为忽略或固定生成时机，必须先给方案并等待确认
+- 如出现"`git status` 报 modified 但 `git diff` 无内容"的伪 diff，先 `git add --renormalize <file>` 让 EOL 规范化清掉，再排查；不要 `git checkout --` 还原（会立即被 plugin 重新写回）
+- 真实 diff（组件增删、依赖变更导致类型变化）随对应功能 commit 一起提交，不单独成 commit，并在汇报中标明来源
+- 与当前任务无关的真实 diff，保留现场，在汇报中列为"既有未提交改动"，不顺手提交、不还原
+- 不批量删除生成文件
+- 后续如要改为 `.gitignore` 忽略或调整生成时机（例如 TS 化后切换路线），必须先给方案并等待确认
 
 ## 8. 任务完成汇报模板
 
