@@ -15,11 +15,31 @@
 - 仓库内项目文档默认使用中文；代码、命令、API、错误信息和专有名词保留原文。
 - `docs/*.md` 用于当前有效的流程、规范、检查清单和项目级说明。
 - `docs/superpowers/plans/` 用于需求探讨、实现计划、阶段性方案和历史计划记录；执行前必须确认对应计划是否仍是当前有效方案。
+- `docs/audits/` 用于系统评估、审计、缺陷盘点等快照型文档；记录"当前是什么样、有哪些问题"，**不作为当前执行依据**，是后续 plans 的输入。
 - `docs/archive/` 用于已归档的历史方案，默认不作为当前执行依据；只有用户明确要求回溯历史时才读取。
 - `docs/learning/` 用于学习笔记、参考资料，默认不作为项目规范依据。
 - 执行具体任务前，Agent 必须根据任务类型读取对应 docs 文档；不要默认全量读取所有 docs。
-- 新增或调整规则时：硬规则 → `AGENTS.md`；详细步骤、变量表、清单 → `docs/*`；需求讨论与阶段性计划 → `docs/superpowers/plans/`；过期方案 → `docs/archive/`；学习笔记 → `docs/learning/`。
-- 不得因 `docs/archive/` 或 `docs/learning/` 中出现某个方案就默认它是当前要执行的方案。
+- 新增或调整规则时：硬规则 → `AGENTS.md`；详细步骤、变量表、清单 → `docs/*`；需求讨论与阶段性计划 → `docs/superpowers/plans/`；评估快照与缺陷盘点 → `docs/audits/`；过期方案 → `docs/archive/`；学习笔记 → `docs/learning/`。
+- 不得因 `docs/archive/`、`docs/learning/` 或 `docs/audits/` 中出现某个方案 / 问题描述就默认它是当前要执行的方案；落地必须经过 `docs/superpowers/plans/`。
+
+## 重构期 Spec 冻结约束（临时，2026-05-06 起）
+
+> 关联：`docs/superpowers/plans/platform-refactor-vision.md` §7、`docs/audits/spec-debt.md`
+> 失效条件：平台化重构结束 + Spec Final Audit 通过后**删除本章节**
+
+平台化重构期间，对 `AGENTS.md` 与 `docs/*`（不含 `docs/audits/`、`docs/learning/`、`docs/superpowers/plans/`）的修订采用冻结 + 批量机制：
+
+- 重构过程中发现的 spec 缺口 / 冲突 / 过严 / 过松，**先记入 `docs/audits/spec-debt.md` 台账，不当场改规范**
+- **紧急例外**（涉及认证 / 数据库 / 支付 / 密钥 / 生产数据的 spec 风险）允许立即修订，仍需在台账登记
+- spec 修订走独立分支 + 独立 PR：`*/spec-*` 前缀；**不与业务代码 PR 混合**
+- 每个里程碑（P0 / P1 / P2 完成）做一次 **Spec Reconciliation Pass**，批量处理 `待批量` 项
+- 标准化前置：新规范需 **N≥2 真实模块验证**才写入 `docs/*`
+
+Agent 执行职责：
+
+- 发现 spec 问题时**默认动作 = 写入 `docs/audits/spec-debt.md`**，不在当前 PR 顺手改 `AGENTS.md` / `docs/*`
+- 是否升级为"紧急"由用户决定，不要自行判断
+- 当用户提议改规范时，提醒本章节存在，确认是否走台账机制
 
 ## 规范冲突与偏差处理
 
@@ -174,5 +194,6 @@
 | 项目文件审计 | `docs/project-inventory.md` |
 | 清理候选清单 | `docs/cleanup-candidates.md` |
 | 阶段性计划索引 | `docs/superpowers/plans/README.md` |
+| 系统评估与审计快照 | `docs/audits/` |
 
 涉及部署架构、认证/session、CSRF、排行榜、RLS、限流或数据库 profile 建档规则的改动前，必须阅读 `docs/ARCHITECTURE.md`。
