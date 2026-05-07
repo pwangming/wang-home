@@ -124,6 +124,23 @@ Step 6：完成报告
   └── 按母 plan §3.4 完成标准逐项核对
 ```
 
+## 📊 执行记录（每个完成点必填）
+
+> **规则**：每个步骤完成后立即在此表追加一行；不批量回填、不省略执行人。执行人写明：用户 / Codex / Claude Code / 自动（CI / Vercel / Railway）。
+
+| 时间（UTC） | 步骤 | 完成内容 | 执行人 | 链接 / 备注 |
+|---|---|---|---|---|
+| | Step 1 | 检查 `git log main..develop --oneline` | | |
+| | Step 2 | 开 sync PR `release: sync main with develop` | | |
+| | Step 2.1 | sync PR CI 全绿 | 自动 | |
+| | Step 3 | 用户手动合 sync PR | | |
+| | Step 3.1 | 验证 1：main production Vercel deploy 跑通 | | |
+| | Step 3.2 | 验证 1：金链路手测（首页 / 登录 / 蛇游戏 / 排行榜） | | |
+| | Step 4 | Railway production env Wait for CI toggle ON | | |
+| | Step 4.1 | 截图存档 toggle ON 状态 | | |
+| | Step 5 | 验证 2：观察下一次 develop 合并的 CI → Railway deploy 时序 | | |
+| | Step 6 | 完成报告填写 | | |
+
 ## 📋 完成报告模板（Codex 落地后填）
 
 ```text
@@ -155,3 +172,4 @@ Step 6：完成报告
 ## 📝 变更日志
 
 - 2026-05-07：初稿，按 ai-collaboration.md "Codex 执行计划模板" 派生于母 plan §3
+- 2026-05-07：加 §执行记录 章节，强制每个完成点记录时间 / 执行人 / 链接
