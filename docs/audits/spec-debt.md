@@ -48,7 +48,7 @@
 
 | ID | 发现日期 | 来源任务 | 现状 spec | 问题描述 | 建议修订方向 | 状态 |
 |---|---|---|---|---|---|---|
-| SD-001 | 2026-05-07 | Monorepo Phase 1 讨论（创建 `docs/learning/git-rename-history.md`） | `AGENTS.md` 文档结构章节将 `docs/learning/` 列为仓库内目录用途之一 | `.gitignore:55` 排除整个 `docs/learning/` 目录，导致按 spec 创建的学习笔记无法入仓，跨 session / 跨 agent 不可见。spec 描述与实际行为冲突 | 移除 `.gitignore:55` 的 `docs/learning/` 排除规则；同步把已存在的 `payment-idempotency.md` + `git-rename-history.md` 入仓 | 待批量 |
+| SD-001 | 2026-05-07 | Monorepo Phase 1 讨论（创建 `docs/learning/git-rename-history.md`） | `AGENTS.md` 文档结构章节将 `docs/learning/` 列为仓库内目录用途之一 | `.gitignore:55` 排除整个 `docs/learning/` 目录，导致按 spec 创建的学习笔记无法入仓，跨 session / 跨 agent 不可见。spec 描述与实际行为冲突 | 移除 `.gitignore:55` 的 `docs/learning/` 排除规则；同步把已存在的 `payment-idempotency.md` + `git-rename-history.md` 入仓 | 已落地 |
 
 ## 2. Spec Reconciliation Pass 历史
 
@@ -61,6 +61,7 @@
 
 | 日期 | ID | 事件 | PR | 备注 |
 |---|---|---|---|---|
+| 2026-05-07 | SD-001 | 移除 `.gitignore:55` 的 `docs/learning/` 排除；入仓 `payment-idempotency.md` + `git-rename-history.md` | 同分支 commit（`codex/development-workflow-cleanup`） | 严格不属"认证 / 数据库 / 支付 / 密钥 / 生产数据"紧急范围；用户授权按紧急通道处理，理由：监禁母 plan `monorepo-phase1-migration.md` 5 处引用 `docs/learning/git-rename-history.md`，不解则 plan 无法交 Codex 执行 |
 
 ## 4. 维护说明
 
