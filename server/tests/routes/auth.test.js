@@ -734,11 +734,98 @@ describe('Auth Routes', () => {
 
   // ========== /api/auth/logout ==========
   describe('POST /api/auth/logout', () => {
+    test('returns 403 when origin is missing', async () => {
+      const testApp = normalizeToKoaApp(app)
+      const res = await request(testApp.callback())
+        .post('/api/auth/logout')
+
+      expect(res.status).toBe(403)
+      expect(res.body.error).toBe('CSRF validation failed: missing origin')
+    })
+
     test('always returns 200 (client clears local state)', async () => {
       mockAuth.signOut.mockResolvedValue({ error: null })
       const res = await simulateRequest(app, 'POST', '/api/auth/logout', null, { Cookie: 'session=some-token' })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
+    })
+
+    test('signs out and clears session when origin is allowed', async () => {
+      let capturedSession = 'not-called'
+      const captureSessionMiddleware = async (ctx, next) => {
+        ctx.session = {
+          supabaseAccessToken: 'valid-token',
+          supabaseRefreshToken: 'valid-refresh-token'
+        }
+        await next()
+        capturedSession = ctx.session
+      }
+
+      mockAuth.signOut.mockResolvedValue({ error: null })
+
+      const res = await simulateRequest(
+        app,
+        'POST',
+        '/api/auth/logout',
+        null,
+        { Cookie: 'session=some-token' },
+        [captureSessionMiddleware]
+      )
+
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(mockAuth.signOut).toHaveBeenCalled()
+      expect(capturedSession).toBeNull()
+    })
+  })
+
+  // ========== Rate limiting: /api/auth/reset-request ==========
+  describe('POST /api/auth/reset-request rate limiting', () => {
+    beforeEach(() => {
+      __resetAll()
+      mockAuth.resetPasswordForEmail.mockResolvedValue({ error: null })
+    })
+
+    test('returns 429 after 3 requests in 1h for same email', async () => {
+      for (let i = 0; i < 3; i++) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'ratetest@t.com' })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'ratetest@t.com' })
+      expect(res.status).toBe(429)
+    })
+
+    test('different emails have independent counters', async () => {
+      for (let i = 0; i < 3; i++) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'user1@t.com' })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'user2@t.com' })
+      expect(res.status).toBe(200)
+    })
+
+    test('email case and whitespace cannot bypass per-email limit', async () => {
+      const variants = ['Bypass@T.com', 'bypass@t.com', '  BYPASS@T.COM  ']
+      for (const email of variants) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-request', { email })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-request', { email: 'bypass@t.com' })
+      expect(res.status).toBe(429)
+    })
+  })
+
+  // ========== Rate limiting: /api/auth/reset-confirm ==========
+  describe('POST /api/auth/reset-confirm rate limiting', () => {
+    beforeEach(() => {
+      __resetAll()
+      mockAuth.setSession.mockResolvedValue({ data: { session: {} }, error: null })
+      mockAuth.updateUser.mockResolvedValue({ data: null, error: { message: 'Token expired' } })
+    })
+
+    test('returns 429 after 10 requests from same IP in 15min', async () => {
+      for (let i = 0; i < 10; i++) {
+        await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r', password: 'abcdef' })
+      }
+      const res = await simulateRequest(app, 'POST', '/api/auth/reset-confirm', { accessToken: 'a', refreshToken: 'r', password: 'abcdef' })
+      expect(res.status).toBe(429)
     })
   })
 
