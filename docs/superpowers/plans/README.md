@@ -3,6 +3,8 @@
 本目录存放分任务的详细实施计划，供 Claude Code 方案/审查 + Codex 执行时双方共享上下文。
 
 > **2026-05-06 平台化重构 vision 上线**：项目方向已扩展为多模块平台（游戏 + AI 应用 + 后台），见 [`platform-refactor-vision.md`](./platform-refactor-vision.md)（讨论中）。该 vision 落地后会派生多个子 plan，可能影响下方迭代 3（成就）/ 迭代 4（支付）的执行节奏与边界。讨论稳定前，下方现有计划保持原状。
+>
+> **2026-05-07 Monorepo Phase 1 子 plan 创建**：vision 派生的第一个子 plan 已创建 → [`monorepo-phase1-migration.md`](./monorepo-phase1-migration.md)。包含 Phase 0.5（迁移前升级）+ Phase 1（pnpm + Turborepo + apps/packages + Node 24 + 改名 playlab）+ Phase 1.5（vite/vitest/pinia/koa/jest major 升级）三段时间线。**项目从此进入平台化重构期，下方既有迭代计划暂缓**。
 
 > **2026-04-21 审查对齐修订**：按“现有代码 vs 计划”重新校准优先级与依赖，新增 2.0 事件契约迁移计划，详见底部《审查对齐修订记录（2026-04-21）》。
 

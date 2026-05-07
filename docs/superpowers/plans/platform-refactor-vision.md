@@ -292,7 +292,7 @@ P3（持续接入）
 
 | 子 plan 主题 | 对应小节 | 状态 |
 |---|---|---|
-| **Monorepo Phase 1 迁移**（pnpm + Turborepo + apps/packages 重组） | 5.7 | **未创建（P0 前置，最优先）** |
+| **Monorepo Phase 1 迁移**（pnpm + Turborepo + apps/packages 重组） | 5.7 | ✅ [已创建](./monorepo-phase1-migration.md)（含 Phase 0.5 / 1 / 1.5 三段时间线） |
 | 数据模型扩展 + 多游戏迁移 | A + 5.3 | 未创建 |
 | RBAC 设计 + audit_logs | B + 5.2 | 未创建 |
 | 模块化目录与路由注册 | C | 未创建 |
