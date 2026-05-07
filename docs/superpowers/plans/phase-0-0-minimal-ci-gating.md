@@ -1,6 +1,7 @@
 # Phase 0.0：最小 CI 门控（战术子 plan）
 
-> 状态：**待 Codex 审查 → 用户确认 → 执行**
+> 状态：**已执行（Step 1-4.1 完成；Step 5 验证 2 留后续观察；Step 6 完成报告已写）**
+> 完成时间：2026-05-07
 > 母 plan：[`monorepo-phase1-migration.md`](./monorepo-phase1-migration.md) §3
 > 来源：[`ci-deploy-gating-and-branch-alignment.md`](./ci-deploy-gating-and-branch-alignment.md) §Phase 1 + §Phase 2 节选
 > 分支：`release/sync-main-with-develop`（开 sync PR 用）；Railway toggle 不走 git
@@ -130,37 +131,53 @@ Step 6：完成报告
 
 | 时间（UTC） | 步骤 | 完成内容 | 执行人 | 链接 / 备注 |
 |---|---|---|---|---|
-| | Step 1 | 检查 `git log main..develop --oneline` | | |
-| | Step 2 | 开 sync PR `release: sync main with develop` | | |
-| | Step 2.1 | sync PR CI 全绿 | 自动 | |
-| | Step 3 | 用户手动合 sync PR | | |
-| | Step 3.1 | 验证 1：main production Vercel deploy 跑通 | | |
-| | Step 3.2 | 验证 1：金链路手测（首页 / 登录 / 蛇游戏 / 排行榜） | | |
-| | Step 4 | Railway production env Wait for CI toggle ON | | |
-| | Step 4.1 | 截图存档 toggle ON 状态 | | |
-| | Step 5 | 验证 2：观察下一次 develop 合并的 CI → Railway deploy 时序 | | |
-| | Step 6 | 完成报告填写 | | |
+| 2026-05-07 08:30 | Step 1 | 检查 `git log main..develop --oneline` — 21 commits ahead | Claude Code | 输出非空，需走 Step 2 |
+| 2026-05-07 08:35 | Step 2 | 从 main 切 `release/sync-main-with-develop`，merge develop（含 AGENTS.md / CLAUDE.md 冲突，取 develop 版本），开 sync PR | Claude Code | [PR #81](https://github.com/pwangming/wang-home/pull/81) |
+| 2026-05-07 09:05:35 | Step 2.1 | sync PR CI 8/8 全绿（Lint / Test Client / Test Server / Build Client / Security Audit / CodeQL / Analyze / Vercel） | 自动 | — |
+| 2026-05-07 09:05:52 | Step 3 | 用户手动合 sync PR；merge commit `2fd431b` | 用户（pwangming） | PR #81 MERGED |
+| 2026-05-07 ~09:10 | Step 3.1 | 验证 1：main production Vercel deploy ready（14s 构建） | 自动 + 用户 | https://client-gy09ckbs8-wangwang4467-1105s-projects.vercel.app |
+| 2026-05-07 ~09:15 | Step 3.2 | 验证 1：金链路手测（首页 / 登录 / 蛇游戏 / 排行榜 / 皮肤 / profile） | 用户 | 全 OK |
+| 2026-05-07 ~09:16 | Step 4 | Railway production env Wait for CI toggle 翻 ON | 用户 | 截图见 Step 4.1 |
+| 2026-05-07 ~09:16 | Step 4.1 | 截图存档 Railway toggle ON 状态（含 GitHub permissions 警告） | 用户 | 本地存档 `Snipaste_2026-05-07_17-16-44.png`；⚠ Railway 警告 "Make sure you have accepted our updated GitHub permissions required for this feature" — 待用户确认是否已点权限授权 |
+| 后续观察 | Step 5 | 验证 2：观察下一次 develop 合并的 CI → Railway deploy 时序 | 后续 | Phase 0.5 第一个 PR 合并时回填本行 |
+| 2026-05-07 09:30 | Step 6 | 完成报告填写 + plan §执行记录 一次性更新 | Claude Code | 见下方 §完成报告 |
 
-## 📋 完成报告模板（Codex 落地后填）
+## 📋 完成报告（已填）
 
 ```text
 本次完成：
-- main = develop 同步：[已完成 / 跳过（main = develop 无 diff）]
-- sync PR 链接：<URL 或 "无需开 PR">
-- Railway Wait for CI toggle：[ON]
-- 验证 1（main production 手测）：[全绿 / 列出问题]
-- 验证 2（下一次 develop 部署时序）：[CI 完成时间 vs Railway deploy 时间]
-- 截图：Railway toggle ON 状态截图
+- main = develop 同步：✅ 已完成
+  - sync PR：https://github.com/pwangming/wang-home/pull/81
+  - merge commit：2fd431b
+  - 合并人：pwangming（用户手动）
+  - 合并时间：2026-05-07 09:05:52Z
+  - 冲突解决：AGENTS.md / CLAUDE.md 取 develop 版本（develop 是 governance bundle 的 canonical 源）
+- Railway Wait for CI toggle：✅ ON
+  - 平台：Railway production env
+  - 截图存档：Snipaste_2026-05-07_17-16-44.png
+  - ⚠ 待用户确认：Railway UI 警告 "Make sure you have accepted our updated GitHub permissions"
+    若 GitHub permissions 未授权，toggle 看似 ON 但实际不生效；下次 develop PR 合并时观察 Railway deploy 时序即可验证
+- 验证 1（main production 手测）：✅ 全绿
+  - production 域名：https://client-gy09ckbs8-wangwang4467-1105s-projects.vercel.app
+  - 测试金链路：首页 / 登录 / 蛇游戏 / 排行榜 / 皮肤切换 / profile，全 OK
+- 验证 2（下一次 develop 部署时序）：⏳ 留 Phase 0.5 第一个 PR 合并时观察 + 回填 §执行记录 Step 5
 
 未做（推到后续 Phase）：
 - Vercel main 自动部署关闭 → Phase 1.6
-- Railway staging env 新建 → Phase 1.6
-- GHA deploy.yml → Phase 1.6
-- AGENTS.md 部署架构章节同步 → Phase 1.6
+- Vercel main Deploy Hook 创建 → Phase 1.6
+- Railway staging env 新建 + 跟 develop → Phase 1.6
+- Railway production env 切换跟踪分支为 main → Phase 1.6
+- .github/workflows/deploy.yml → Phase 1.6
+- AGENTS.md 部署架构章节同步（"现状 vs 目标" 双段落改成单段"现行架构"） → Phase 1.6
 
 剩余风险：
+- Railway GitHub permissions 是否真授权：用户截图含警告，待 Step 5 实际观察才能确认
+- Wait for CI ON 后若有遗漏的 workflow 卡住，可能阻塞所有部署 → Phase 0.5 前两次合并需重点监控
 - 软冻结期未启动（Phase 1 才启动），develop 在 Phase 0.0 → 0.5 → 1 之间可正常合 PR
-- Wait for CI ON 后若有遗漏的 workflow 卡住，可能阻塞所有部署 → 监控前两次合并时序
+
+下一步：
+- 派生 Phase 0.5 战术子 plan（迁移前 minor 升级一批），同样按"Codex 执行计划模板"格式 + §执行记录 表
+- Phase 0.5 第一个 PR 合并时观察 Railway deploy 时序，回填本 plan §执行记录 Step 5
 ```
 
 ## 🔗 关联
@@ -173,3 +190,4 @@ Step 6：完成报告
 
 - 2026-05-07：初稿，按 ai-collaboration.md "Codex 执行计划模板" 派生于母 plan §3
 - 2026-05-07：加 §执行记录 章节，强制每个完成点记录时间 / 执行人 / 链接
+- 2026-05-07：执行完成 — Steps 1-4.1 落地，Step 5 留后续观察，Step 6 完成报告写入；plan 状态由"待执行"改为"已执行"
