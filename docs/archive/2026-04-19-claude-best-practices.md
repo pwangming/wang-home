@@ -1,5 +1,8 @@
 # Claude Code 最佳实践
 
+> 已归档：本文是早期 Claude Code 使用经验整理，可能包含过期配置、历史模型名称和个人工作流建议。
+> 当前项目规则以 `AGENTS.md`、`CLAUDE.md` 和 `docs/*` 当前流程文档为准。
+
 > 基于本项目（Vue/Koa/Supabase + Vercel/Railway）和已优化的全局配置整理。按优先级从高到低。
 
 ---
@@ -245,7 +248,7 @@ cd client && npm run test:e2e      # Playwright E2E
 cd server && npm test              # Jest 后端单测
 
 supabase db push                   # 推本地迁移到远程
-supabase db push --project-ref kltksixmakbpcljjkvbw  # 推生产
+supabase db push --project-ref <production-project-ref>  # 推生产
 ```
 
 ### 关键 env 变量

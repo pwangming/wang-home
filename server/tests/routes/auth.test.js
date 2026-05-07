@@ -734,11 +734,48 @@ describe('Auth Routes', () => {
 
   // ========== /api/auth/logout ==========
   describe('POST /api/auth/logout', () => {
+    test('returns 403 when origin is missing', async () => {
+      const testApp = normalizeToKoaApp(app)
+      const res = await request(testApp.callback())
+        .post('/api/auth/logout')
+
+      expect(res.status).toBe(403)
+      expect(res.body.error).toBe('CSRF validation failed: missing origin')
+    })
+
     test('always returns 200 (client clears local state)', async () => {
       mockAuth.signOut.mockResolvedValue({ error: null })
       const res = await simulateRequest(app, 'POST', '/api/auth/logout', null, { Cookie: 'session=some-token' })
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
+    })
+
+    test('signs out and clears session when origin is allowed', async () => {
+      let capturedSession = 'not-called'
+      const captureSessionMiddleware = async (ctx, next) => {
+        ctx.session = {
+          supabaseAccessToken: 'valid-token',
+          supabaseRefreshToken: 'valid-refresh-token'
+        }
+        await next()
+        capturedSession = ctx.session
+      }
+
+      mockAuth.signOut.mockResolvedValue({ error: null })
+
+      const res = await simulateRequest(
+        app,
+        'POST',
+        '/api/auth/logout',
+        null,
+        { Cookie: 'session=some-token' },
+        [captureSessionMiddleware]
+      )
+
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(mockAuth.signOut).toHaveBeenCalled()
+      expect(capturedSession).toBeNull()
     })
   })
 

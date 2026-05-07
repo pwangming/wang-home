@@ -48,8 +48,5 @@ client/test-results/
 # Generated screenshots
 docs/screenshots/
 
-# Generated plans and specs
-docs/superpowers/
-
-# Local learning notes
-docs/learning/
+# Generated local scratch plans
+docs/superpowers/tmp/

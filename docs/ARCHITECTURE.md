@@ -1,7 +1,9 @@
 # Kinetic Arcade — 架构决策记录
 
-> 最后更新: 2026-04-10
-> 记录历史中做出的关键架构决策及其原因，供后续迭代参考。
+> 最近维护: 2026-04-29
+> 本文档记录关键架构决策、原因和影响，供后续迭代参考。它不是当前执行计划；执行任务前仍需遵守 `AGENTS.md`。
+
+如本文档与 `AGENTS.md` 或当前有效流程文档冲突，以 `AGENTS.md` 为准，并在任务中指出需要同步修正文档。
 
 ---
 
@@ -15,6 +17,19 @@
 - **禁止**在前端设置 `VITE_API_BASE` 为 Railway 直连 URL，否则跨域 cookie 立即失效
 - Railway 边缘终止 TLS，后端需要 `app.proxy = true` 信任 `X-Forwarded-Proto` 头，才能正确设置 `Secure` cookie
 - `client/vercel.json` 的 rewrite 规则是此架构的核心，不能随意修改
+
+### 分支跟踪现状（待对齐）
+
+**当前状态**：
+
+- Vercel production 跟 `main`
+- Railway production env 跟 `develop`（与 main 不对称）
+- Railway "Wait for CI" toggle 关闭，部署不等 GitHub CI 完成
+- 不存在 Railway staging env
+
+**目标状态**：双方对齐到"main → production，develop → staging"，CI 全绿后再触发部署。
+
+**落地方案**：见 `docs/superpowers/plans/ci-deploy-gating-and-branch-alignment.md`。落地前发布相关文档（`docs/release-process.md` 等）中的"目标态"描述不要按字面执行。
 
 ---
 
@@ -112,6 +127,6 @@
 
 ---
 
-## 历史计划存档
+## 计划与归档
 
-详细的实现计划和 TDD 步骤已归档至 `docs/archive/`，按日期命名，供追溯参考。
+当前有效的阶段性计划和 TDD 步骤见 `docs/superpowers/plans/`；过期方案归档至 `docs/archive/`，按日期命名，供追溯参考。

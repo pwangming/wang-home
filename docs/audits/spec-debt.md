@@ -1,0 +1,69 @@
+# Spec 债务台账
+
+> 位置：`docs/audits/`，**不是当前执行依据**
+> 创建：2026-05-06
+> 用途：平台化重构期间累积发现的 `AGENTS.md` / `docs/*` 规范缺口、不清晰、冲突、过严、过松等问题
+> 关联：`docs/superpowers/plans/platform-refactor-vision.md`
+
+## 0. 台账规则
+
+### 何时进台账
+
+重构过程中发现以下情况，先记入台账，**不当场改规范**：
+
+- 现有规则不够明确，agent 执行时需要猜测
+- 现有规则与新场景冲突
+- 规则过严，让合理操作无法进行
+- 规则过松，让风险操作通过
+- 规范文档之间存在重复、冲突
+- 现有 spec 没覆盖到的新场景（例如多模块、AI 应用、后台、流式响应等）
+
+### 何时直接改规范（不进台账）
+
+- **紧急**类：涉及认证、数据库、支付、密钥、生产数据；当场不修补会引发安全或数据风险
+- **小修订**：typo、broken link、明显笔误
+
+紧急修订仍需在台账登记，状态直接标"已落地"+ commit 链接，作为审计轨迹。
+
+### 状态机
+
+| 状态 | 含义 | 触发动作 |
+|---|---|---|
+| `观察中` | N=1 案例，可能过早标准化，先记不动 | 等下一个同类案例出现 |
+| `待批量` | N≥2 同类问题确认，等里程碑统一改 | 进入下一次 Spec Reconciliation Pass |
+| `紧急` | 高风险，立即改 | 走独立 spec PR，48h 内落地 |
+| `已落地` | 已修订完成 | 链接 commit/PR，保留审计 |
+
+### 处理节奏
+
+- **每周一次 review**：判断 `观察中` 是否升级为 `待批量` 或 `紧急`
+- **每个里程碑（P0/P1/P2 完成）**：批量处理所有 `待批量`，独立 PR 提交，称为 **Spec Reconciliation Pass**
+- **最终**：重构结束前做一次 **Spec Final Audit**，与业内 best practice 对标，标记规范"完整态"
+
+### 标准化前置
+
+模块化规范、命名规范、设计 token 规范、AI 应用规范等，**至少两个真实模块都按该规范实施过**才能写入 `docs/*`。蛇游戏 + 第二个游戏 / 第一个 AI 应用是验证窗口。
+
+## 1. 当前台账
+
+| ID | 发现日期 | 来源任务 | 现状 spec | 问题描述 | 建议修订方向 | 状态 |
+|---|---|---|---|---|---|---|
+| SD-001 | 2026-05-07 | Monorepo Phase 1 讨论（创建 `docs/learning/git-rename-history.md`） | `AGENTS.md` 文档结构章节将 `docs/learning/` 列为仓库内目录用途之一 | `.gitignore:55` 排除整个 `docs/learning/` 目录，导致按 spec 创建的学习笔记无法入仓，跨 session / 跨 agent 不可见。spec 描述与实际行为冲突 | 移除 `.gitignore:55` 的 `docs/learning/` 排除规则；同步把已存在的 `payment-idempotency.md` + `git-rename-history.md` 入仓 | 已落地 |
+
+## 2. Spec Reconciliation Pass 历史
+
+每次里程碑批量处理时记录。
+
+| 日期 | 触发里程碑 | PR | 处理 ID 范围 | 备注 |
+|---|---|---|---|---|
+
+## 3. 紧急修订记录
+
+| 日期 | ID | 事件 | PR | 备注 |
+|---|---|---|---|---|
+| 2026-05-07 | SD-001 | 移除 `.gitignore:55` 的 `docs/learning/` 排除；入仓 `payment-idempotency.md` + `git-rename-history.md` | 同分支 commit（`codex/development-workflow-cleanup`） | 严格不属"认证 / 数据库 / 支付 / 密钥 / 生产数据"紧急范围；用户授权按紧急通道处理，理由：监禁母 plan `monorepo-phase1-migration.md` 5 处引用 `docs/learning/git-rename-history.md`，不解则 plan 无法交 Codex 执行 |
+
+## 4. 维护说明
+
+- 本文档为重构周期内的工作工具，重构结束后归入最终 spec audit 的输入
+- 重构结束 + Spec Final Audit 完成后，本文档可整体迁入 `docs/archive/`
