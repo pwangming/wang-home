@@ -48,9 +48,7 @@
 
 | ID | 发现日期 | 来源任务 | 现状 spec | 问题描述 | 建议修订方向 | 状态 |
 |---|---|---|---|---|---|---|
-| SD-001 | _示例_ | _重构 P0-A 数据模型_ | _AGENTS.md "数据库高风险" 规则_ | _未覆盖多游戏 game_id 迁移场景_ | _补一条多模块 schema 演进的 plan/migration 拆分约定_ | _观察中_ |
-
-> 实际记录从下面开始追加，删除示例行。
+| SD-001 | 2026-05-07 | Monorepo Phase 1 讨论（创建 `docs/learning/git-rename-history.md`） | `AGENTS.md` 文档结构章节将 `docs/learning/` 列为仓库内目录用途之一 | `.gitignore:55` 排除整个 `docs/learning/` 目录，导致按 spec 创建的学习笔记无法入仓，跨 session / 跨 agent 不可见。spec 描述与实际行为冲突 | 移除 `.gitignore:55` 的 `docs/learning/` 排除规则；同步把已存在的 `payment-idempotency.md` + `git-rename-history.md` 入仓 | 待批量 |
 
 ## 2. Spec Reconciliation Pass 历史
 
