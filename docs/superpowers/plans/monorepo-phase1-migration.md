@@ -1,17 +1,37 @@
 # Monorepo Phase 1 迁移子计划（含 Phase 0.0 / 0.5 / 1 / 1.5 / 1.6 时间线）
 
 > 创建：2026-05-07
-> 状态：**方案讨论稳定，待执行确认**
+> 状态：**战略母 plan**，作为各 Phase 战术子 plan 的派生框架；**本 plan 不直接交 Codex 执行**，每个 Phase 须派生独立战术子 plan 后逐个交接
 > 分支前缀：见各 Phase 子分支命名
 > 基分支：`develop`
 > **硬依赖**：无（这是其他 P0 子 plan 的前置）
-> **阻塞**：执行期间软冻结 `develop`（D7），所有路径变更类 PR 暂停
+> **阻塞**：Phase 1 执行期间软冻结 `develop`（D7），所有路径变更类 PR 暂停
 > 预计总工时：**Phase 0.0（半天）+ Phase 0.5（1-2 天）+ Phase 1（3-5 天）+ Phase 1.5（3-5 天）+ Phase 1.6（1-2 天）= 2-3 周**
 > 关联：
 > - 母文档：[`platform-refactor-vision.md`](./platform-refactor-vision.md) §5.7
 > - CI 计划：[`ci-deploy-gating-and-branch-alignment.md`](./ci-deploy-gating-and-branch-alignment.md)（拆分到 Phase 0.0 + Phase 1.6 两段执行）
-> - 学习笔记：[`docs/learning/git-rename-history.md`](../../learning/git-rename-history.md)（本地，未入仓，见 SD-001）
+> - 学习笔记：[`docs/learning/git-rename-history.md`](../../learning/git-rename-history.md)
 > - Spec 演进：[`docs/audits/spec-debt.md`](../../audits/spec-debt.md)
+>
+> **AGENTS.md 准入风险评估**：
+> | Phase | 风险等级 | 主要原因 |
+> |---|---|---|
+> | 0.0 | 高 | main = develop 同步 + Railway production env toggle 改 |
+> | 0.5 | 低 | 仅 minor 升级，已受 Phase 0.0 CI 门控保护 |
+> | 1 | 高 | 部署平台 root directory + 项目改名 + GitHub repo 改名 + 全仓 git mv |
+> | 1.5 | 中（koa 单独高） | 各 group 独立中风险，koa 3 影响所有 API 故单独高 |
+> | 1.6 | 高 | Vercel + Railway + GHA 三平台联动 |
+>
+> 每个高风险 Phase 必须按 AGENTS.md "功能与变更准入标准"：先方案 + 用户确认 + 测试 / 回滚 / 安全影响说明。
+>
+> **模型主力 / Codex 占比**：
+> | Phase | 用户操作 | Codex 操作 | Claude Code 角色 |
+> |---|---|---|---|
+> | 0.0 | 100%（手动 PR + Railway UI） | 0%（无代码改动） | 方案审查 |
+> | 0.5 | 5%（PR 合并 click） | 95%（依赖升级 + 测试） | koa 3 / vite 7 之外的依赖审查 |
+> | 1 | 40%（Vercel / Railway / GitHub UI） | 60%（代码 + 配置） | git mv 拆 commit 规范监督 + 部署联调审查 |
+> | 1.5 | 5% | 95%（升级 + 适配代码 + 测试） | koa 3 升级方案 + 回归测试设计 |
+> | 1.6 | 70%（Vercel / Railway / GHA secret UI） | 30%（写 deploy.yml + 文档） | 部署架构对齐审查 |
 
 ---
 
@@ -67,6 +87,45 @@
 |---|---|---|
 | P1 | CI 计划与架构升级顺序 | **C：拆两段**。最小门控前置（Phase 0.0），全套补完后置（Phase 1.6） |
 | P2 | CI 计划是否独立成 plan | **A：纳入本子 plan**。Phase 0.0 / 1.6 章节统一管理时间线 |
+
+### 1.5 测试策略
+
+本 plan 整体属**结构变更与依赖升级**，非业务功能变更，TDD 不直接适用。
+
+| Phase | 单测 / 集成测改动 | 验证手段 |
+|---|---|---|
+| 0.0 | 无 | CI 失败场景手测（故意写一个失败 PR 验证 Railway 不部署） |
+| 0.5 | 无 | 现有测试矩阵全绿 + preview 部署 + 手测金链路（登录 / 提分 / 排行榜 / 皮肤） |
+| 1 | 无 | 同上 + Vercel preview + Railway preview / production 双端调通 |
+| 1.5 vite/vitest/pinia/jest | 无 | 现有测试矩阵全绿 |
+| 1.5 koa 3 | **必须新增回归测试**：auth、CSRF、session、bodyparser 路径各一条 | 全 API 端点逐个测 + E2E 全跑 |
+| 1.6 | 无 | develop / main / CI 失败 三场景手测 |
+
+例外：koa 3 升级（Phase 1.5 Group 4）必须补回归测试，因 ctx 个别属性 API 调整 + bodyparser 改名风险高。
+
+### 1.6 用户操作清单（Codex 不能做）
+
+汇总所有需用户在外部 UI / Dashboard 完成的步骤，按 Phase 分。
+
+| Phase | 操作 | 工具 / 位置 | 状态 |
+|---|---|---|---|
+| 0.0 | 开 PR `release: sync main with develop` 并手动合并 | GitHub PR UI | 待执行 |
+| 0.0 | Railway production env 翻 Wait for CI toggle | Railway Dashboard → Settings | 待执行 |
+| 1 | Vercel 改 Project Name `kinetic-arcade-client` → `playlab-web` | Vercel → Project Settings → General | 待执行 |
+| 1 | Vercel 改 Root Directory `client` → `apps/web` + Install/Build Command | Vercel → Build & Development Settings | 待执行 |
+| 1 | Railway 改 Service Name `kinetic-arcade-server` → `playlab-api` | Railway Dashboard → Settings | 待执行 |
+| 1 | Railway 改 Root Directory `server` → `apps/api` + Build/Start Command | Railway → Build Settings | 待执行 |
+| 1 | 记录 Railway 新 URL，反馈给 Codex 改 `apps/web/vercel.json` | Railway → Domains | 待执行 |
+| 1 | GitHub repo 改名 `home` → `playlab` | GitHub → Repo Settings → General | 待执行 |
+| 1 | 本地更新 git remote URL | 终端 | 待执行 |
+| 1 | 检查 Vercel ↔ GitHub / Railway ↔ GitHub 集成是否仍正常 | 各平台 | 待执行 |
+| 1.6 | Railway 新建 staging environment（跟 develop） | Railway Dashboard → New Environment | 待执行 |
+| 1.6 | 复制 staging env 变量（含 `ALLOWED_ORIGINS`） | Railway → Variables | 待执行 |
+| 1.6 | Railway production env 切换跟踪分支为 `main` | Railway → Settings | 待执行 |
+| 1.6 | Vercel 关 main 自动部署 | Vercel → Settings → Git | 待执行 |
+| 1.6 | Vercel 创建 main 的 Deploy Hook | Vercel → Settings → Git → Deploy Hooks | 待执行 |
+| 1.6 | GitHub 加 secret `VERCEL_DEPLOY_HOOK_MAIN` | GitHub → Repo → Settings → Secrets | 待执行 |
+| 1.6 | 测试 CI 失败场景（故意写失败 PR） | GitHub | 待执行 |
 
 ---
 
@@ -709,7 +768,21 @@ P0 §B 子 plan 内：
 - 项目上下文：[`docs/project-context.md`](../../project-context.md)
 - 开发流程：[`docs/development-workflow.md`](../../development-workflow.md)
 
-## 10. 变更日志
+## 10. 未决问题
+
+派生战术子 plan 时需要在子 plan 内回答或保留：
+
+1. **Phase 1 软冻结期实际长度**：plan 写 7 天，超期处理待定。建议战术子 plan 加"Day 5 进度评估 → 必要时延长到 14 天"机制。
+2. **pinia 升级实际改造面**：当前未实际尝试，若改造面意外大，Phase 1.5 顺序变 1→2→4→5→3（pinia 推到最后）。Phase 1.5 战术子 plan 需先做 1 小时改造面探查。
+3. **`packages/shared` 是否在 Phase 1 立刻填真实内容**：当前最小占位（`PLAYLAB_VERSION`）。是否在 Phase 1 内提前迁现有共享常量（如游戏 enum、API 路径常量）？建议：**不在 Phase 1**，留到 P0 §B RBAC 子 plan 同步迁。
+4. **Phase 1.6 staging env Supabase project 拆分时机**：CI 计划原文注 "staging 暂时共享 production Supabase project；后续视需要拆"。决策时机：第一次需要 staging 独立 schema 测试时。Phase 1.6 战术子 plan 暂不拆。
+5. **Phase 1 期间紧急 bug 处理通道**：软冻结期间若 develop 出现紧急 bug（认证 / 支付 / 生产数据），是否允许中断迁移分支去修？当前 D7 规则允许"紧急安全补丁"，但未明确是否需要把迁移分支 rebase 到新 develop。建议：紧急修复后由用户决定是 rebase 还是迁移分支独立推进。
+6. **Phase 1.5 koa 3 中 koa-bodyparser → @koa/bodyparser 改名**：所有 import 全替换的工作量未精确评估。Phase 1.5 战术子 plan Group 4 需先 grep 出全部引用点。
+
+---
+
+## 11. 变更日志
 
 - 2026-05-07：初稿，基于 14 项决策汇总（D1-D7、U1-U3、M1-M4、Q1）
 - 2026-05-07：CI 顺序定 P1=C / P2=A，新增 Phase 0.0（最小 CI 门控）+ Phase 1.6（CI 全套补完），编织 [`ci-deploy-gating-and-branch-alignment.md`](./ci-deploy-gating-and-branch-alignment.md) 进时间线
+- 2026-05-07：按规范合规性自审补 5 项缺口 — 风险等级标注（顶部表）/ 模型分工 / 测试策略（§1.5）/ 用户操作清单（§1.6）/ 未决问题（§10）。状态由"待执行确认"改为"战略母 plan，不直接交 Codex 执行"，明确派生战术子 plan 后逐个交接
