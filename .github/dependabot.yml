@@ -1,4 +1,11 @@
 version: 2
+
+# 在 docs/superpowers/plans/monorepo-phase1-migration.md §6（Phase 1.5 major 升级）
+# 完成前，禁止 Dependabot 自动开 vite / vitest / @vitejs/plugin-vue / @vitest/coverage-v8 /
+# vue-router / pinia / koa / koa-router / koa-bodyparser / jest / @types/jest 的 major bump
+# PR。这些 major 升级由 Phase 1.5 战术子 plan 统一推进，避免抢跑 + CI 失败 PR 噪声。
+# Phase 1.5 完成后可移除对应 ignore 项。
+
 updates:
   - package-ecosystem: npm
     directory: /
@@ -15,6 +22,30 @@ updates:
       prod-minor-patch:
         dependency-type: production
         update-types: [minor, patch]
+    ignore:
+      # Reserved for Phase 1.5 manual upgrade (master plan §6)
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-vue"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vue-router"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pinia"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "koa"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "koa-router"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "koa-bodyparser"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/jest"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
@@ -34,6 +65,20 @@ updates:
       prod-minor-patch:
         dependency-type: production
         update-types: [minor, patch]
+    ignore:
+      # Reserved for Phase 1.5 manual upgrade (master plan §6)
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-vue"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vue-router"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pinia"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
@@ -53,6 +98,14 @@ updates:
       prod-minor-patch:
         dependency-type: production
         update-types: [minor, patch]
+    ignore:
+      # Reserved for Phase 1.5 manual upgrade (master plan §6)
+      - dependency-name: "koa-bodyparser"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/jest"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
