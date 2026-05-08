@@ -11,7 +11,7 @@
 > | Phase | 战术子 plan | 状态 |
 > |---|---|---|
 > | 0.0 | [`phase-0-0-minimal-ci-gating.md`](./phase-0-0-minimal-ci-gating.md) | ✅ **已执行**（Steps 1-4.1 完成 2026-05-07；Step 5 留 Phase 0.5 PR 合并时观察） |
-> | 0.5 | [`phase-0-5-pre-migration-upgrades.md`](./phase-0-5-pre-migration-upgrades.md) | ✅ 已派生，待 Codex 审查 + 用户确认 |
+> | 0.5 | [`phase-0-5-pre-migration-upgrades.md`](./phase-0-5-pre-migration-upgrades.md) | ✅ **已执行**（11 个升级 commit via PR #84 合并 develop 2026-05-08） |
 > | 1 | _未派生_ | 等 Phase 0.5 完成 |
 > | 1.5 | _未派生_ | 等 Phase 1 完成 |
 > | 1.6 | _未派生_ | 等 Phase 1.5 完成 |

@@ -639,20 +639,18 @@ commit：`docs: update path references after monorepo migration`
 - 验证：所有 store + 依赖 store 的组件功能跑通
 - 工时：半天 - 1 天
 
-### 6.4 Group 4：koa 2 → 3 + 周边
+### 6.4 Group 4：koa-bodyparser 包改名（范围已缩小）
 
-- 分支：`chore/upgrade-koa-3`
-- **最危险的一组**，独立 PR + 详细测试
+- 分支：`chore/upgrade-koa-bodyparser`
 - 内容：
-  - `koa ^2.15.0` → `^3.x`
-  - `koa-router ^12.0.0` → `^13.x`
   - `koa-bodyparser ^4.4.0` → `@koa/bodyparser ^5.x`（**包改名**）
 - 注意点：
-  - koa 3 移除 legacy generator middleware（项目应该未用，需 grep 确认）
-  - ctx 个别属性 API 调整
   - bodyparser scoped 包名变了，import 全替换
-- 验证：所有 API 端点逐个测；E2E 全跑
-- 工时：1 天
+  - 配套调整 koa 中间件挂载位置
+- 验证：所有 API 端点 POST 路径 + E2E
+- 工时：半天
+
+> **2026-05-08 范围缩小**：原计划本组含 koa 2→3 + koa-router 12→13 + bodyparser 改名。Dependabot 在 Phase 0.5 PR #84 合并后约 3 分钟内自动合并 PR #65 (koa 2→3.2) + PR #68 (koa-router 12→14)，server 测试 128/128 全通过。本组只剩 bodyparser 改名待做，工时从 1 天降为半天，风险等级从"最危险"降为中等。详情见 [`phase-0-5-pre-migration-upgrades.md`](./phase-0-5-pre-migration-upgrades.md) §完成报告 "Dependabot 抢跑"。
 
 ### 6.5 Group 5：jest 29 → 30
 
@@ -786,3 +784,4 @@ P0 §B 子 plan 内：
 - 2026-05-07：初稿，基于 14 项决策汇总（D1-D7、U1-U3、M1-M4、Q1）
 - 2026-05-07：CI 顺序定 P1=C / P2=A，新增 Phase 0.0（最小 CI 门控）+ Phase 1.6（CI 全套补完），编织 [`ci-deploy-gating-and-branch-alignment.md`](./ci-deploy-gating-and-branch-alignment.md) 进时间线
 - 2026-05-07：按规范合规性自审补 5 项缺口 — 风险等级标注（顶部表）/ 模型分工 / 测试策略（§1.5）/ 用户操作清单（§1.6）/ 未决问题（§10）。状态由"待执行确认"改为"战略母 plan，不直接交 Codex 执行"，明确派生战术子 plan 后逐个交接
+- 2026-05-08：§6.4 Phase 1.5 Group 4 范围缩小 — Dependabot 在 Phase 0.5 PR #84 后自动合并 PR #65 (koa 2→3) + PR #68 (koa-router 12→14)；本组仅剩 koa-bodyparser → @koa/bodyparser 包改名，工时减半，风险降为中等
