@@ -1,5 +1,13 @@
 version: 2
 
+# Phase 1 monorepo 迁移软冻结（2026-05-14 起，临时）：
+# 所有 npm 生态 schedule.interval 从 weekly 改为 monthly，避免 dependabot PR
+# 抢跑撞迁移分支（codex/chore-monorepo-phase1）的 lockfile / 路径搬家
+# commit。Phase 1.6 完成后另开 PR 反向恢复，同时改路径
+# /client → /apps/web、/server → /apps/api。
+# 关联：docs/superpowers/plans/phase-1-monorepo-migration.md §0.1.1
+# 失效条件：Phase 1.6 完成 + AGENTS.md 软冻结章节删除。
+#
 # 在 docs/superpowers/plans/monorepo-phase1-migration.md §6（Phase 1.5 major 升级）
 # 完成前，禁止 Dependabot 自动开 vite / vitest / @vitejs/plugin-vue / @vitest/coverage-v8 /
 # vue-router / pinia / koa / koa-router / koa-bodyparser / jest / @types/jest 的 major bump
@@ -10,7 +18,8 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      # Phase 1 软冻结期临时改 monthly，详见文件顶部注释
+      interval: monthly
       day: monday
       time: '09:00'
       timezone: Asia/Shanghai
@@ -53,7 +62,8 @@ updates:
   - package-ecosystem: npm
     directory: /client
     schedule:
-      interval: weekly
+      # Phase 1 软冻结期临时改 monthly，详见文件顶部注释
+      interval: monthly
       day: monday
       time: '09:00'
       timezone: Asia/Shanghai
@@ -86,7 +96,8 @@ updates:
   - package-ecosystem: npm
     directory: /server
     schedule:
-      interval: weekly
+      # Phase 1 软冻结期临时改 monthly，详见文件顶部注释
+      interval: monthly
       day: monday
       time: '09:00'
       timezone: Asia/Shanghai
@@ -113,7 +124,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      # Phase 1 软冻结期临时改 monthly，详见文件顶部注释
+      interval: monthly
       day: monday
       time: '09:00'
       timezone: Asia/Shanghai
