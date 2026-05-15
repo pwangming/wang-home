@@ -12,7 +12,11 @@ permissions:
 jobs:
   develop-pr:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    # Phase 1 monorepo 迁移软冻结期间（2026-05-14 起），跳过 dependabot bot
+    # 防止 dependabot PR 自动合并撞迁移分支 lockfile / 路径搬家。
+    # 关联：docs/superpowers/plans/phase-1-monorepo-migration.md §0.1.2
+    # 失效条件：Phase 1.6 完成后另开 PR 移除 dependabot 跳过条件。
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
     steps:
       - name: Enable squash auto-merge
         run: |
