@@ -22,6 +22,40 @@
 - 新增或调整规则时：硬规则 → `AGENTS.md`；详细步骤、变量表、清单 → `docs/*`；需求讨论与阶段性计划 → `docs/superpowers/plans/`；评估快照与缺陷盘点 → `docs/audits/`；过期方案 → `docs/archive/`；学习笔记 → `docs/learning/`。
 - 不得因 `docs/archive/`、`docs/learning/` 或 `docs/audits/` 中出现某个方案 / 问题描述就默认它是当前要执行的方案；落地必须经过 `docs/superpowers/plans/`。
 
+## Phase 1 monorepo 迁移软冻结（临时，2026-05-14 起）
+
+> 关联：`docs/superpowers/plans/phase-1-monorepo-migration.md`
+> 失效条件：Phase 1 PR 合并 develop + 部署平台联调全跑通后**删除本章节**（含 Phase 1 §执行记录表全部填完）
+
+平台化重构 Phase 1 期间，`develop` 分支软冻结。冻结目标是保护 monorepo 迁移分支（`codex/chore-monorepo-phase1`）的 `git mv` rename history、lockfile 切换和路径搬家不被并行 PR 冲突破坏。
+
+冻结期间 `develop` 上**禁止**：
+
+- 新增文件 / 新增目录
+- 改文件名 / 移动文件
+- 改 import / require 路径
+- 改 root `package.json` / 各 config 路径（`vite.config.js` / `vitest.config.js` / `playwright.config.js` / `eslint.config.js` / `jest.config.js` / `vercel.json`）
+- 大型重构（跨多文件改动）
+
+冻结期间 `develop` 上**允许**：
+
+- 文档内容修订（不改文件名 / 不挪位置；含 `docs/audits/`、`docs/learning/`、`docs/superpowers/plans/`）
+- 单文件内 bug 修复（不影响 import / 路径）
+- 配置值微调（如 timeout 数值、文案、UI 颜色）
+- **紧急安全补丁**（涉及认证 / 支付 / 生产数据 / 密钥）
+
+紧急 bug 处理流程（Phase 1 子 plan 决策 C）：
+
+- 允许中断；develop 上 hotfix 走正常短分支 + 合
+- **迁移分支不 rebase**（rebase 会破坏 Step 3 `git mv` rename 100% 检测）
+- 合并迁移分支时一次性走三方 merge 解冲突
+
+### Dependabot 同步暂停
+
+软冻结期间 `.github/dependabot.yml` schedule 改为 `monthly`，`.github/workflows/develop-pr-auto-merge.yml` 跳过 dependabot bot；防止 dependabot PR 抢跑撞迁移分支 lockfile / 路径变更（参考 Phase 0.5 PR #84 合并后被 PR #65/#68 抢跑事故）。Phase 1.6 完成后另开 PR 反向恢复（同时改路径 `/client` → `/apps/web`、`/server` → `/apps/api`）。
+
+---
+
 ## 重构期 Spec 冻结约束（临时，2026-05-06 起）
 
 > 关联：`docs/superpowers/plans/platform-refactor-vision.md` §7、`docs/audits/spec-debt.md`
