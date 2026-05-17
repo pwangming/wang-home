@@ -54,6 +54,25 @@
 
 软冻结期间 `.github/dependabot.yml` schedule 改为 `monthly`，`.github/workflows/develop-pr-auto-merge.yml` 跳过 dependabot bot；防止 dependabot PR 抢跑撞迁移分支 lockfile / 路径变更（参考 Phase 0.5 PR #84 合并后被 PR #65/#68 抢跑事故）。Phase 1.6 完成后另开 PR 反向恢复（同时改路径 `/client` → `/apps/web`、`/server` → `/apps/api`）。
 
+### 已知例外（业务连续性紧急）
+
+软冻结字面禁止"新增文件 / 改 `vercel.json` / 改 root config"，但下表登记的"业务连续性紧急"事件允许临时打破，必须用独立分支 + `infra/emergency` 标签 + 关联 plan：
+
+| 例外 | 触发原因 | 决策日期 | 关联 plan | 状态 |
+|---|---|---|---|---|
+| Railway → Zeabur 后端平台迁移 | Railway 付费失败，后端将断 | 2026-05-18 | [`railway-to-zeabur-migration.md`](docs/superpowers/plans/railway-to-zeabur-migration.md) | 待执行 |
+
+例外允许范围：
+- 该 plan 明确列出的文件变更（如 `client/vercel.json` rewrite destination）
+- 该 plan 明确列出的环境变量改动
+- 该 plan 关联的部署平台 UI 操作
+
+例外**不允许**：
+- 顺手做 plan 范围外的其他改动（路径、import、新增非 plan 内文件）
+- 在迁移分支 (`codex/chore-monorepo-phase1`) 上做（迁移分支保持不变，合并时三方 merge）
+
+例外失效条件：关联 plan 进入 Phase E（收尾）并删除本表对应行。Phase 1 恢复时必须确认本表为空。
+
 ---
 
 ## 重构期 Spec 冻结约束（临时，2026-05-06 起）

@@ -1,6 +1,27 @@
 # Phase 1：Monorepo 迁移本体（战术子 plan）
 
-> 状态：**待执行** — §决策待审 §A-§H 全部确认 2026-05-14（见 §变更日志）
+> ## ⏸ 前置阻塞（2026-05-18 起）
+>
+> **本 Phase 暂停执行**，等待 [`railway-to-zeabur-migration.md`](./railway-to-zeabur-migration.md) 完成后恢复。
+>
+> **阻塞原因**：Railway 付费失败，后端业务连续性危机。当前优先级：**先迁 Zeabur → 稳定 1 周 → 再做 Phase 1**。
+>
+> **恢复条件**（全部满足）：
+> 1. Zeabur 迁移 Phase D 切流完成（main 已切）
+> 2. 观察期 ≥ 7 天无 session/CSRF/Supabase 延迟回归
+> 3. `docs/ARCHITECTURE.md` §1 已更新为 Zeabur
+>
+> **恢复时必须重审的本 plan 内容**：
+> - §0 准备工作 → 部署平台从 Railway 改为 Zeabur（root directory 切换平台一致）
+> - §决策 H（Vercel 改名次序）→ "Railway CORS" 引用点改为 "Zeabur CORS"
+> - 母 plan §10 部署联调步骤 → Railway dashboard 操作替换为 Zeabur dashboard
+> - 软冻结例外清单（AGENTS.md "Phase 1 monorepo 迁移软冻结" 章节"已知例外"）→ 移除 Zeabur 例外条目
+>
+> 决策日期：2026-05-18；决策依据：业务连续性 > 工程化改造；恢复审批：用户。
+>
+> ---
+>
+> 状态：**待执行（已阻塞）** — §决策待审 §A-§H 全部确认 2026-05-14（见 §变更日志）
 > 母 plan：[`monorepo-phase1-migration.md`](./monorepo-phase1-migration.md) §5
 > 分支：`codex/chore-monorepo-phase1`（母 plan §5.1 命名）
 > 基分支：`develop`
