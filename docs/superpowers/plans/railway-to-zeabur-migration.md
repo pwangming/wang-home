@@ -172,16 +172,22 @@
 2. **Rate limiter 内存存储**（`ARCHITECTURE.md` §7）：同上，重启清零；单实例下不致命。
 3. **DNS 切换缓存**：若 Railway 配过自定义域名，DNS TTL 期内可能解析到旧后端。建议 Phase A 前先把 Railway 自定义域名 TTL 降到 60s。
 4. **Phase 1 monorepo 迁移撞车**：Phase 1 恢复时，root directory 从 `server/` 改成 `apps/api/`，需在 Zeabur dashboard 同步改。已在 phase-1 plan §前置阻塞 "恢复时必须重审" 列出。
+5. **Railway `SESSION_SECRET` 重复条目**：Phase A 截图显示 Railway Variables 面板 `SESSION_SECRET` 出现两行，用户验证两个值一致（推测为 Railway UI 历史录入 artifact）。Phase B4 录入 Zeabur 时只写一次 `SESSION_SECRET`，使用 Railway 当前生效值。若 Phase D1 切流后出现登录态异常，怀疑此值有歧义，需回 Railway Raw Editor 二次核对。
 
 ---
 
 ## 📦 PR 拆分
 
-| PR | 分支 | 内容 | 标签 |
-|---|---|---|---|
-| 1（本 PR） | `claude/docs-zeabur-migration-prep` | 本 plan + phase-1 plan 暂停块 + AGENTS.md 例外条目 | `docs` + `infra` |
-| 2 | `claude/infra-emergency-zeabur-switch` | 只改 `client/vercel.json` rewrite | `infra/emergency` |
-| 3 | `claude/docs-zeabur-migration-cleanup` | Phase E 文档清理（迁移稳定后） | `docs` |
+> 实际推进中产生了若干计划外的小 PR（Phase A 信息收集驱动），整体仍维持"一次 PR 一件事"。
+
+| PR | 分支 | 内容 | 标签 | 状态 |
+|---|---|---|---|---|
+| 1 | `claude/docs-zeabur-migration-prep` | 本 plan + phase-1 plan 暂停块 + AGENTS.md 例外条目 | `docs` | ✅ [#104](https://github.com/pwangming/wang-home/pull/104) 已合 |
+| 2 | `claude/docs-zeabur-plan-fix-env` | §B4 env 变量名修订（Phase A2 触发） | `docs` | ✅ [#105](https://github.com/pwangming/wang-home/pull/105) 已合 |
+| 3 | `claude/infra-emergency-zeabur-nvmrc` | 新增 `.nvmrc=20`（Phase A3 衍生，软冻结紧急例外） | `infra/emergency` | ✅ [#106](https://github.com/pwangming/wang-home/pull/106) 已合 |
+| 4（本 PR） | `claude/docs-zeabur-phase-a-log` | Phase A §执行记录填表 + 决策日志补 Tokyo + 未覆盖风险补 SESSION_SECRET 重复条目 | `docs` | 进行中 |
+| 5 | `claude/infra-emergency-zeabur-switch` | 只改 `client/vercel.json` rewrite（Phase D1.1） | `infra/emergency` | 待开 |
+| 6 | `claude/docs-zeabur-migration-cleanup` | Phase E 文档清理（迁移稳定后） | `docs` | 待开 |
 
 ---
 
@@ -191,11 +197,11 @@
 
 | Step | 时间 | 执行人 | 说明 / 链接 |
 |---|---|---|---|
-| A1 节点选择 | | | |
-| A2 env 清单 | | | |
-| A3 Node 版本确认 | | | |
-| A4 启动命令确认 | | | |
-| A5 Railway 配置备份 | | | |
+| A1 节点选择 | 2026-05-18 | 用户 | Tokyo（对齐 Supabase 项目区域，消除跨区 RTT） |
+| A2 env 清单 | 2026-05-18 | Claude Code | grep `server/src/**` + `server/.env.example`：`SESSION_SECRET` / `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `ALLOWED_ORIGINS` / `NODE_ENV`；`PORT` 由 Zeabur 自动注入。发现 plan §B4 草稿名字错误，触发修订 [PR #105](https://github.com/pwangming/wang-home/pull/105) |
+| A3 Node 版本确认 | 2026-05-18 | Claude Code | 仓库原无 `.nvmrc` / `engines.node`，CI 用 Node 20。补丁 [PR #106](https://github.com/pwangming/wang-home/pull/106) 锁定 Node 20，本地 / CI / Zeabur 三方对齐 |
+| A4 启动命令确认 | 2026-05-18 | Claude Code | `node src/index.js`（ESM，`server/package.json#scripts.start`），Zeabur Nixpacks 默认检测即可，Root Directory 设 `server/` |
+| A5 Railway 配置备份 | 2026-05-18 | 用户 | 截图本地保存（`Railway环境变量.png`）；7 条变量去重后 6 项与 A2 吻合；发现 `SESSION_SECRET` 在 Railway 显示两次但用户确认值一致（见 §未覆盖风险 #5） |
 | B1 Zeabur Project 创建 | | | |
 | B2 关联 GitHub | | | |
 | B3 Service 创建 | | | |
@@ -229,3 +235,5 @@
 | 2026-05-18 | 平台切换与分支对齐拆开做（本 plan 不做对齐） | 用户 | 一次只动一个变量；对齐留 ci-deploy-gating plan |
 | 2026-05-18 | 走 AGENTS.md 软冻结"紧急例外"，Phase 1 暂停 | 用户 | 业务连续性 > 工程化改造 |
 | 2026-05-18 | 保持 Zeabur 跟 develop（不切到 main） | Claude 建议、待用户确认 | 与 Railway 现状一致，减少切换变量 |
+| 2026-05-18 | A1 Zeabur region 选 Tokyo | 用户 | Supabase 项目位于 Tokyo，部署同区域消除 backend↔Supabase 跨区 RTT |
+| 2026-05-18 | 补 `.nvmrc=20` 走 Phase 1 软冻结紧急例外 | Claude 建议 + 用户确认 | A3 信息收集发现 Node 版本无锁；Zeabur Nixpacks 默认拉最新 LTS（可能 22）会跟 CI Node 20 漂移 |
