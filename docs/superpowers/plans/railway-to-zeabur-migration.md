@@ -96,14 +96,14 @@
   - Root directory: `server/`
   - Build / Start：默认 Nixpacks，必要时手动指定 `npm install` + `npm start`
 - [ ] **B4** 录入环境变量（**严禁明文出现在 chat / PR / log**，在 Zeabur secret 面板手动输入）：
-  - `SESSION_KEY`
+  - `SESSION_SECRET`
   - `SUPABASE_URL`
-  - `SUPABASE_SERVICE_ROLE_KEY`
   - `SUPABASE_ANON_KEY`
   - `ALLOWED_ORIGINS`（临时同时含：Vercel prod 域名 + Vercel preview 通配 + Zeabur `*.zeabur.app` URL）
   - `NODE_ENV=production`
   - 其他业务变量按 `docs/environment.md`
   - **不需要** `PORT`（Zeabur 自动注入）
+  - **不需要** `SUPABASE_SERVICE_ROLE_KEY`（当前代码仅用 anon key + RLS，未调用 service role）
 - [ ] **B5** 首次部署，观察 build log → service 启动 log
 - [ ] **B6** 健康检查：访问 `https://<zeabur-url>/api/health`（或现有 health endpoint）确认 200
 - [ ] **B7** 绑定 Zeabur 自定义子域名（如 `api-zeabur.<your-domain>`）+ HTTPS 自动签发；便于回滚切流量
